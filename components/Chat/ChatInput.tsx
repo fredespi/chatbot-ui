@@ -1,7 +1,5 @@
 import {
   IconArrowDown,
-  IconBolt,
-  IconBrandGoogle,
   IconPlayerStop,
   IconRepeat,
   IconSend,
@@ -19,12 +17,11 @@ import {
 import { useTranslation } from 'next-i18next';
 
 import { Message } from '@/types/chat';
-import { Plugin } from '@/types/plugin';
+import {Plugin, PluginID, Plugins} from '@/types/plugin';
 import { Prompt } from '@/types/prompt';
 
 import HomeContext from '@/pages/api/home/home.context';
 
-import { PluginSelect } from './PluginSelect';
 import { PromptList } from './PromptList';
 import { VariableModal } from './VariableModal';
 
@@ -50,7 +47,6 @@ export const ChatInput = ({
   const {
     state: { selectedConversation, messageIsStreaming, prompts },
 
-    dispatch: homeDispatch,
   } = useContext(HomeContext);
 
   const [content, setContent] = useState<string>();
@@ -61,7 +57,7 @@ export const ChatInput = ({
   const [variables, setVariables] = useState<string[]>([]);
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [showPluginSelect, setShowPluginSelect] = useState(false);
-  const [plugin, setPlugin] = useState<Plugin | null>(null);
+  const [plugin, setPlugin] = useState<Plugin | null>(Plugins[PluginID.OPENAI_RETRIEVAL]);
 
   const promptListRef = useRef<HTMLUListElement | null>(null);
 
@@ -99,7 +95,7 @@ export const ChatInput = ({
 
     onSend({ role: 'user', content }, plugin);
     setContent('');
-    setPlugin(null);
+    setPlugin(Plugins[PluginID.OPENAI_RETRIEVAL]);
 
     if (window.innerWidth < 640 && textareaRef && textareaRef.current) {
       textareaRef.current.blur();
@@ -280,36 +276,36 @@ export const ChatInput = ({
           )}
 
         <div className="relative mx-2 flex w-full flex-grow flex-col rounded-md border border-black/10 bg-white shadow-[0_0_10px_rgba(0,0,0,0.10)] dark:border-gray-900/50 dark:bg-[#40414F] dark:text-white dark:shadow-[0_0_15px_rgba(0,0,0,0.10)] sm:mx-4">
-          <button
-            className="absolute left-2 top-2 rounded-sm p-1 text-neutral-800 opacity-60 hover:bg-neutral-200 hover:text-neutral-900 dark:bg-opacity-50 dark:text-neutral-100 dark:hover:text-neutral-200"
-            onClick={() => setShowPluginSelect(!showPluginSelect)}
-            onKeyDown={(e) => {}}
-          >
-            {plugin ? <IconBrandGoogle size={20} /> : <IconBolt size={20} />}
-          </button>
+          {/*<button*/}
+          {/*  className="absolute left-2 top-2 rounded-sm p-1 text-neutral-800 opacity-60 hover:bg-neutral-200 hover:text-neutral-900 dark:bg-opacity-50 dark:text-neutral-100 dark:hover:text-neutral-200"*/}
+          {/*  onClick={() => setShowPluginSelect(!showPluginSelect)}*/}
+          {/*  onKeyDown={(e) => {}}*/}
+          {/*>*/}
+          {/*  {plugin ? <IconBrandGoogle size={20} /> : <IconBolt size={20} />}*/}
+          {/*</button>*/}
 
-          {showPluginSelect && (
-            <div className="absolute left-0 bottom-14 rounded bg-white dark:bg-[#343541]">
-              <PluginSelect
-                plugin={plugin}
-                onKeyDown={(e: any) => {
-                  if (e.key === 'Escape') {
-                    e.preventDefault();
-                    setShowPluginSelect(false);
-                    textareaRef.current?.focus();
-                  }
-                }}
-                onPluginChange={(plugin: Plugin) => {
-                  setPlugin(plugin);
-                  setShowPluginSelect(false);
+          {/*{showPluginSelect && (*/}
+          {/*  <div className="absolute left-0 bottom-14 rounded bg-white dark:bg-[#343541]">*/}
+          {/*    <PluginSelect*/}
+          {/*      plugin={plugin}*/}
+          {/*      onKeyDown={(e: any) => {*/}
+          {/*        if (e.key === 'Escape') {*/}
+          {/*          e.preventDefault();*/}
+          {/*          setShowPluginSelect(false);*/}
+          {/*          textareaRef.current?.focus();*/}
+          {/*        }*/}
+          {/*      }}*/}
+          {/*      onPluginChange={(plugin: Plugin) => {*/}
+          {/*        setPlugin(plugin);*/}
+          {/*        setShowPluginSelect(false);*/}
 
-                  if (textareaRef && textareaRef.current) {
-                    textareaRef.current.focus();
-                  }
-                }}
-              />
-            </div>
-          )}
+          {/*        if (textareaRef && textareaRef.current) {*/}
+          {/*          textareaRef.current.focus();*/}
+          {/*        }*/}
+          {/*      }}*/}
+          {/*    />*/}
+          {/*  </div>*/}
+          {/*)}*/}
 
           <textarea
             ref={textareaRef}

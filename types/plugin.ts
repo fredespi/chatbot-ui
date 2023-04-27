@@ -13,10 +13,12 @@ export interface PluginKey {
 
 export enum PluginID {
   GOOGLE_SEARCH = 'google-search',
+  OPENAI_RETRIEVAL = 'openai-retrieval'
 }
 
 export enum PluginName {
   GOOGLE_SEARCH = 'Google Search',
+  OPENAI_RETRIEVAL = 'OpenAI Retrieval'
 }
 
 export const Plugins: Record<PluginID, Plugin> = {
@@ -34,6 +36,16 @@ export const Plugins: Record<PluginID, Plugin> = {
       },
     ],
   },
+  [PluginID.OPENAI_RETRIEVAL]: {
+    id: PluginID.OPENAI_RETRIEVAL,
+    name: PluginName.OPENAI_RETRIEVAL,
+    requiredKeys: [
+      {
+        key: 'OPENAI_RETRIEVAL_KEY',
+        value: '',
+      },
+    ],
+  }
 };
 
 export const PluginList = Object.values(Plugins);

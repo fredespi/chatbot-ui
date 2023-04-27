@@ -34,7 +34,7 @@ spec:
           image: <docker user>/chatbot-ui:latest
           resources: {}
           ports:
-            - containerPort: 3000
+            - containerPort: 80
           env:
             - name: OPENAI_API_KEY
               valueFrom:
@@ -54,7 +54,7 @@ spec:
     - name: http
       protocol: TCP
       port: 80
-      targetPort: 3000
+      targetPort: 80
   selector:
     app: chatbot-ui
   type: ClusterIP
