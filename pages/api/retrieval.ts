@@ -56,7 +56,8 @@ const handler = async (req: Request): Promise<Response> => {
 
     const prompt = endent`
     Provide me with the information I requested. Use the sources to provide an accurate response. Respond in markdown format. Cite the sources you used as a markdown link as you use them at the end of each sentence by number of the source (ex: [[1]](link.com)). Provide an accurate response and then stop. Today's date is ${new Date().toLocaleDateString()}.
-
+    Important: If there are no sources, respond with "No sources found." and stop. If there are sources but the answer cannot be extracted from them, respond with "Not sure how to respond to that." and stop. If there are sources, and the answer can be extracted from the sources, respond with the information requested and then stop. Do not provide any additional information.
+    
     Example Input:
     What's the weather in San Francisco today?
 
@@ -80,8 +81,8 @@ const handler = async (req: Request): Promise<Response> => {
 
     Response:
     `;
-
-    console.log("Prompt retrieved from silopedia: " + sources[0].text.slice(-20) + "...")
+    console.log("User message: " + userMessage.content.trim())
+    console.log("Prompt retrieved from silopedia: " + sources[0].text.slice(-300) + "...")
     // const prompt: string = { role: 'user', content: answerPrompt };
     // const { model, messages, key, prompt, temperature } = (await req.json()) as ChatBody;
 

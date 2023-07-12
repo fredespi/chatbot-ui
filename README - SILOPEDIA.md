@@ -2,7 +2,8 @@
 
 ## Docker instructions
 
-### Build the docker image
+### Build the docker image 
+(if there is an error like ```assertion failed [result.value != EEXIST]: VmTracker attempted to allocate existing mapping``` try turning off rosetta in docker desktop)
 ```bash
 docker build --platform linux/amd64 --no-cache -t europe-west1-docker.pkg.dev/silogen-dev/silopedia-bot/silopedia-ui:latest .
 ```
