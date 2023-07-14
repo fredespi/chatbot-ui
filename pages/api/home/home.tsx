@@ -360,8 +360,8 @@ const Home = ({
       }}
     >
       <Head>
-        <title>Silopedia Chat UI</title>
-        <meta name="description" content="Chat with Silopedia." />
+        <title>Silo AI Chatbot</title>
+        <meta name="description" content="Chat with any file." />
         <meta
           name="viewport"
           content="height=device-height ,width=device-width, initial-scale=1, user-scalable=no"
