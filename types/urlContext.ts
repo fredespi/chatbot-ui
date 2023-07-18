@@ -6,4 +6,5 @@ export interface UrlContextBody extends ChatBody {
 export interface UrlContextSource {
   link: string;
   text: string;
+  pdf: Blob | '';
 }

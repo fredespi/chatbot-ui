@@ -37,9 +37,10 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<any>) => {
       const urlContextSources: UrlContextSource[] = urls.map((item: any) => ({
         link: item,
         text: '',
+        pdf: '',
       }));
 
-      console.log('found urls', JSON.stringify(urlContextSources))
+      console.log('Found urls', JSON.stringify(urlContextSources))
       if (urlContextSources.length > 0) {
         const urlContextSourcesWithText: any = await Promise.all(
           urlContextSources.map(async (source) => {
@@ -59,9 +60,17 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<any>) => {
                 // }),
                 fetch(source.link),
                 timeoutPromise,
-              ])) as any;
+              ])) as Response;
 
-              // if (res) {
+              // Check if the response is a PDF
+              if (res.headers.get('Content-Type') === 'application/pdf') {
+                const pdfBuffer = await res.blob();
+                return {
+                  ...source,
+                  pdf: pdfBuffer,
+                } as UrlContextSource;
+              }
+
               const html = await res.text();
 
               const virtualConsole = new jsdom.VirtualConsole();
@@ -95,32 +104,93 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<any>) => {
 
         filteredSources = urlContextSourcesWithText.filter(Boolean);
 
-        console.log('fetched pages', filteredSources)
+        console.log('Fetched urls as pages or pdfs', filteredSources)
 
         // Now upsert the sources into the vector db
         if (filteredSources.length > 0) {
-          const url = `${process.env.RETRIEVAL_PLUGIN_URL}/upsert`;
-          const headers = {
+          const upsertUrl = `${process.env.RETRIEVAL_PLUGIN_URL}/upsert`;
+          const upsertFileUrl = `${process.env.RETRIEVAL_PLUGIN_URL}/upsert-file`;
+          const upsertHeaders = {
             'Authorization': `Bearer ${process.env.RETRIEVAL_BEARER_KEY}`,
             'Content-Type': 'application/json'
           };
+          const upsertFileHeaders = {
+            'Authorization': `Bearer ${process.env.RETRIEVAL_BEARER_KEY}`,
+            // 'Content-Type': 'application/pdf'
+          };
 
-          const documents: OpenaiRetrievalDocument[] = filteredSources.map((source) => ({
-            id: source.link,
-            text: source.text,
-            metadata: {
-              source: 'file',
-              source_id: source.link,
-              url: source.link,
-              created_at: new Date().toISOString(),
-              author: 'silo-chatbot-ui',
+          // Collect all the sources that are not PDFs and create documents from them
+          const documents: (OpenaiRetrievalDocument|null)[] = filteredSources.map((source) => {
+            if (!source.pdf) {
+              return {
+                  id: source.link,
+                  text: source.text,
+                  metadata: {
+                    source: 'file',
+                    source_id: source.link,
+                    url: source.link,
+                    created_at: new Date().toISOString(),
+                    author: 'silo-chatbot-ui',
+                  }
+                };
+            } else {
+              return null;
             }
-          }));
+          }).filter(Boolean);
 
+          console.log("Preparing for upsert document urls: " + documents.length)
+
+          // Collect all the sources that are PDFs
+          const pdfs: UrlContextSource[] = filteredSources.filter((source) => source.pdf);
+          console.log("Preparing for upsert PDF urls: " + pdfs.length)
+
+
+          // Upsert-file the PDFs
+          await Promise.all(
+            pdfs.map(async (source) => {
+              try {
+                const timeoutPromise = new Promise((_, reject) =>
+                  setTimeout(() => reject(new Error('Request timed out')), 20000),
+                );
+
+                const formData = new FormData();
+                formData.append('file', source.pdf)
+                formData.append('metadata', JSON.stringify({
+                    source: 'file',
+                    source_id: source.link,
+                    url: source.link,
+                    created_at: new Date().toISOString(),
+                    author: 'silo-chatbot-ui',
+                  }))
+
+                const res = (await Promise.race([
+                  fetch(upsertFileUrl, {
+                    method: 'POST',
+                    headers: upsertFileHeaders,
+                    body: formData
+                  }),
+                  timeoutPromise,
+                ])) as any;
+
+                // if (res) {
+                const resJson = await res.json();
+
+                if (resJson) {
+                  console.log('Upsert-file pdf into db:' + JSON.stringify(resJson))
+                }
+              } catch (error) {
+                console.error(error);
+                return null;
+              }
+            }),
+          )
+
+          // Upsert the documents
           const body = JSON.stringify({
             documents: documents,
           });
 
+          // todo ne need to map here since the whole package was created as body
           await Promise.all(
             filteredSources.map(async (source) => {
               try {
@@ -129,9 +199,9 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<any>) => {
                 );
 
                 const res = (await Promise.race([
-                  fetch(url, {
+                  fetch(upsertUrl, {
                     method: 'POST',
-                    headers: headers,
+                    headers: upsertHeaders,
                     body: body
                   }),
                   timeoutPromise,
@@ -141,7 +211,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<any>) => {
                 const resJson = await res.json();
 
                 if (resJson) {
-                  console.log('Upserted source into db:' + JSON.stringify(resJson))
+                  console.log('Upsert documents into db:' + JSON.stringify(resJson))
                 }
               } catch (error) {
                 console.error(error);
@@ -216,7 +286,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<any>) => {
     Response:
     `;
     console.log("User message: " + userMessage.content.trim())
-    console.log("Prompt retrieved from silopedia: " + sources[0].text.slice(-300) + "...")
+    console.log("Prompt retrieved from vector db: " + sources[0].text.slice(-300) + "...")
     console.log("Sources mentioned in prompt: " + filteredSources.map((source) => source.link).join(", "))
     // const prompt: string = { role: 'user', content: answerPrompt };
     // const { model, messages, key, prompt, temperature } = (await req.json()) as ChatBody;
