@@ -8,4 +8,5 @@ export interface ProcessEnv {
   RETRIEVAL_PLUGIN_URL: string;
   NEXT_PUBLIC_DEFAULT_TEMPERATURE: string;
   DEFAULT_MODEL: string;
+  SAVE_CONTEXT_URLS: string;
 }

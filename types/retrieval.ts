@@ -15,3 +15,15 @@ export interface OpenaiRetrievalSource {
   createdAt: string;
   text: string;
 }
+
+export interface OpenaiRetrievalDocument {
+  id: string;
+  text: string;
+  metadata: {
+    source: string;
+    source_id: string;
+    url: string;
+    created_at: string;
+    author: string;
+  }
+}

@@ -1,6 +1,6 @@
-import {DEFAULT_TEMPERATURE} from '@/utils/app/const';
+import {DEFAULT_TEMPERATURE, OPENAI_API_HOST, SAVE_CONTEXT_URLS} from '@/utils/app/const';
 // import { cleanSourceText } from '@/utils/server/google';
-import { OpenaiRetrievalBody, OpenaiRetrievalSource } from '@/types/retrieval';
+import {OpenaiRetrievalBody, OpenaiRetrievalDocument, OpenaiRetrievalSource} from '@/types/retrieval';
 import endent from 'endent';
 import { OpenAIError, OpenAIStream } from '@/utils/server';
 import { Message } from '@/types/chat';
@@ -10,16 +10,150 @@ import wasm from '../../node_modules/@dqbd/tiktoken/lite/tiktoken_bg.wasm?module
 
 import tiktokenModel from '@dqbd/tiktoken/encoders/cl100k_base.json';
 import { Tiktoken, init } from '@dqbd/tiktoken/lite/init';
+import jsdom, {JSDOM} from "jsdom";
+import {Readability} from "@mozilla/readability";
+import {cleanSourceText} from "@/utils/server/google";
+import {UrlContextSource} from "@/types/urlContext";
+import {NextApiRequest, NextApiResponse} from "next";
 
-export const config = {
-  runtime: 'edge',
-};
+// export const config = {
+//   runtime: 'edge',
+// };
 
-const handler = async (req: Request): Promise<Response> => {
+// const handler = async (req: Request): Promise<Response> => {
+const handler = async (req: NextApiRequest, res: NextApiResponse<any>) => {
   try {
     const { messages, key, model, temperature} =
-        (await req.json()) as OpenaiRetrievalBody;
+      (await req.body) as OpenaiRetrievalBody;
     const userMessage = messages[messages.length - 1];
+
+    // If the SAVE_CONTEXT_URLS env var is set, we'll try to fetch the text of any URLs in the user's message
+    // and upsert them into the retrieval plugin vector db.
+    let filteredSources: UrlContextSource[] = [];
+    if (SAVE_CONTEXT_URLS) {
+      const urlPattern = new RegExp('(?:(?:https?|ftp|file):\/\/|www\.|ftp\.)(?:\([-A-Z0-9+&@#\/%=~_|$?!:,.]*\)|[-A-Z0-9+&@#\/%=~_|$?!:,.])*(?:\([-A-Z0-9+&@#\/%=~_|$?!:,.]*\)|[A-Z0-9+&@#\/%=~_|$])', 'gi');
+      const urls = userMessage.content.match(urlPattern) || []
+
+      const urlContextSources: UrlContextSource[] = urls.map((item: any) => ({
+        link: item,
+        text: '',
+      }));
+
+      console.log('found urls', JSON.stringify(urlContextSources))
+      if (urlContextSources.length > 0) {
+        const urlContextSourcesWithText: any = await Promise.all(
+          urlContextSources.map(async (source) => {
+            try {
+              const timeoutPromise = new Promise((_, reject) =>
+                setTimeout(() => reject(new Error('Request timed out')), 5000),
+              );
+
+              // let headers = new Headers({
+              //   "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/60.0.3112.50 Safari/537.36"
+              // });
+              const res = (await Promise.race([
+                // fetch(source.link, {
+                //     method  : 'GET',
+                //     headers : headers,
+                //     // ... etc
+                // }),
+                fetch(source.link),
+                timeoutPromise,
+              ])) as any;
+
+              // if (res) {
+              const html = await res.text();
+
+              const virtualConsole = new jsdom.VirtualConsole();
+              virtualConsole.on('error', (error) => {
+                if (!error.message.includes('Could not parse CSS stylesheet')) {
+                  console.error(error);
+                }
+              });
+
+              const dom = new JSDOM(html, {virtualConsole});
+              const doc = dom.window.document;
+              const parsed = new Readability(doc).parse();
+
+              if (parsed) {
+                let sourceText = cleanSourceText(parsed.textContent);
+
+                return {
+                  ...source,
+                  // TODO: switch to tokens
+                  text: sourceText,
+                } as UrlContextSource;
+              }
+
+              return null;
+            } catch (error) {
+              console.error(error);
+              return null;
+            }
+          }),
+        );
+
+        filteredSources = urlContextSourcesWithText.filter(Boolean);
+
+        console.log('fetched pages', filteredSources)
+
+        // Now upsert the sources into the vector db
+        if (filteredSources.length > 0) {
+          const url = `${process.env.RETRIEVAL_PLUGIN_URL}/upsert`;
+          const headers = {
+            'Authorization': `Bearer ${process.env.RETRIEVAL_BEARER_KEY}`,
+            'Content-Type': 'application/json'
+          };
+
+          const documents: OpenaiRetrievalDocument[] = filteredSources.map((source) => ({
+            id: source.link,
+            text: source.text,
+            metadata: {
+              source: 'file',
+              source_id: source.link,
+              url: source.link,
+              created_at: new Date().toISOString(),
+              author: 'silo-chatbot-ui',
+            }
+          }));
+
+          const body = JSON.stringify({
+            documents: documents,
+          });
+
+          await Promise.all(
+            filteredSources.map(async (source) => {
+              try {
+                const timeoutPromise = new Promise((_, reject) =>
+                  setTimeout(() => reject(new Error('Request timed out')), 5000),
+                );
+
+                const res = (await Promise.race([
+                  fetch(url, {
+                    method: 'POST',
+                    headers: headers,
+                    body: body
+                  }),
+                  timeoutPromise,
+                ])) as any;
+
+                // if (res) {
+                const resJson = await res.json();
+
+                if (resJson) {
+                  console.log('Upserted source into db:' + JSON.stringify(resJson))
+                }
+              } catch (error) {
+                console.error(error);
+                return null;
+              }
+            }),
+          );
+        }
+      }
+    }
+
+    // now we can query the retrieval plugin
     const query = encodeURIComponent(userMessage.content.trim());
 
     const body = JSON.stringify(
@@ -83,15 +217,16 @@ const handler = async (req: Request): Promise<Response> => {
     `;
     console.log("User message: " + userMessage.content.trim())
     console.log("Prompt retrieved from silopedia: " + sources[0].text.slice(-300) + "...")
+    console.log("Sources mentioned in prompt: " + filteredSources.map((source) => source.link).join(", "))
     // const prompt: string = { role: 'user', content: answerPrompt };
     // const { model, messages, key, prompt, temperature } = (await req.json()) as ChatBody;
 
-    await init((imports) => WebAssembly.instantiate(wasm, imports));
-    const encoding = new Tiktoken(
-      tiktokenModel.bpe_ranks,
-      tiktokenModel.special_tokens,
-      tiktokenModel.pat_str,
-    );
+    // await init((imports) => WebAssembly.instantiate(wasm, imports));
+    // const encoding = new Tiktoken(
+    //   tiktokenModel.bpe_ranks,
+    //   tiktokenModel.special_tokens,
+    //   tiktokenModel.pat_str,
+    // );
 
     let promptToSend = `Use the sources to provide an accurate response. Respond in markdown format. Cite the sources you used as [1](link), etc, as you use them. Maximum 4 sentences.`;
     // if (!promptToSend) {
@@ -103,9 +238,10 @@ const handler = async (req: Request): Promise<Response> => {
       temperatureToUse = DEFAULT_TEMPERATURE;
     }
 
-    const prompt_tokens = encoding.encode(promptToSend);
+    // const prompt_tokens = encoding.encode(promptToSend);
 
-    let tokenCount = prompt_tokens.length;
+    // prune any older messages that don't fit. we keep the most recent ones
+    let charCount = promptToSend.length;
     let messagesToSend: Message[] = [];
     messages.push({
       "role": "user",
@@ -113,26 +249,65 @@ const handler = async (req: Request): Promise<Response> => {
     })
     for (let i = messages.length - 1; i >= 0; i--) {
       const message = messages[i];
-      const tokens = encoding.encode(message.content);
-
-      if (tokenCount + tokens.length + 1000 > model.tokenLimit) {
+      // const tokens = encoding.encode(message.content);
+      // a token is about 4 characters
+      if (charCount + message.content.length + 4000 > model.tokenLimit * 4) {
         break;
       }
-      tokenCount += tokens.length;
+      charCount += message.content.length;
       messagesToSend = [message, ...messagesToSend];
     }
 
-    encoding.free();
+    // encoding.free();
 
-    const stream = await OpenAIStream(model, promptToSend, temperatureToUse, key, messagesToSend);
+    // const stream = await OpenAIStream(model, promptToSend, temperatureToUse, key, messagesToSend);
 
-    return new Response(stream);
+    const answerRes = await fetch(`${OPENAI_API_HOST}/v1/chat/completions`, {
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${key ? key : process.env.OPENAI_API_KEY}`,
+        ...(process.env.OPENAI_ORGANIZATION && {
+          'OpenAI-Organization': process.env.OPENAI_ORGANIZATION,
+        }),
+      },
+      method: 'POST',
+      body: JSON.stringify({
+        model: model.id,
+        messages: messages,
+        max_tokens: 1000,
+        temperature: temperatureToUse,
+        stream: false,
+      }),
+    });
+
+    const { choices: choices2 } = await answerRes.json();
+    let answer = choices2[0].message.content;
+
+    // Add a message about the urls we fetched to the answer
+    if (filteredSources.length > 0) {
+      let fetchedUrlsMessage = "[ Saved content from these urls: ";
+
+      // for each entry in filteredSources, add a message to the answer
+      for (let i = 0; i < filteredSources.length; i++) {
+        fetchedUrlsMessage += `${filteredSources[i].link} `;
+      }
+      fetchedUrlsMessage += "]\n\n";
+
+      // Add the urls message to the start of the answer
+      answer = fetchedUrlsMessage + answer;
+    }
+
+    res.status(200).json({ answer: answer } )
+    // res.status(200).send(answerRes)
+    // return new Response(stream);
   } catch (error) {
-    console.error(error);
+    console.error('there was an error: ' + error);
     if (error instanceof OpenAIError) {
-      return new Response('Error', { status: 500, statusText: error.message });
+      // return new Response('Error', { status: 500, statusText: error.message });
+      res.status(500).json({ status: 500, statusText: error.message });
     } else {
-      return new Response('Error', { status: 500 });
+      // return new Response('Error', { status: 500 });
+      res.status(500).json({ status: 500 });
     }
   }
   //   const answerRes = await fetch(`${OPENAI_API_HOST}/v1/chat/completions`, {

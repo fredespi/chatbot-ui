@@ -53,8 +53,10 @@ gcloud container images delete europe-west1-docker.pkg.dev/silogen-dev/silopedia
 ```
 
 ## Todo
-- done fix temperature. should be 0 by default
-- done fix port 80 so we don't have to use 3000
+- for some reason we cannot fetch https://python.langchain.com/docs/get_started/introduction.html
+- DONE Add a message at the start of an answer when we have saved a url's content to the vector store
+- DONE fix temperature. should be 0 by default
+- DONE fix port 80 so we don't have to use 3000
 - todo how to configure firewall so that only internal ips can reach the retrieval plugin
 - todo figure out how to delete an artifact from command line and add that to the deploy_to_gcp.sh scripts
 - todo fix so we use https
