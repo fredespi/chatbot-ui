@@ -1,4 +1,7 @@
-import { IconFileExport, IconSettings } from '@tabler/icons-react';
+import { useSession, getSession } from "next-auth/react"
+import { signOut } from "next-auth/react"
+
+import { IconFileExport, IconSettings, IconLogout } from '@tabler/icons-react';
 import { useContext, useState } from 'react';
 
 import { useTranslation } from 'next-i18next';
@@ -15,6 +18,7 @@ import { ClearConversations } from './ClearConversations';
 import { PluginKeys } from './PluginKeys';
 
 export const ChatbarSettings = () => {
+  const { data: session, status } = useSession()
   const { t } = useTranslation('sidebar');
   const [isSettingDialogOpen, setIsSettingDialog] = useState<boolean>(false);
 
@@ -67,6 +71,12 @@ export const ChatbarSettings = () => {
         onClose={() => {
           setIsSettingDialog(false);
         }}
+      />
+
+      <SidebarButton
+        text={session ? t('Sign out') + " " + session.user?.name : t('Sign in')}
+        icon={<IconLogout size={18} />}
+        onClick={() => signOut({redirect: true, callbackUrl: "/"}) }
       />
     </div>
   );
