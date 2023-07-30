@@ -199,7 +199,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<any>) => {
               documents: documents,
             });
 
-            // todo ne need to map here since the whole package was created as body
+            // todo no need to map here since the whole package was created as body
             await Promise.all(
               filteredSources.map(async (source) => {
                 try {
