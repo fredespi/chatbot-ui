@@ -40,7 +40,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<any>) => {
       // and upsert them into the retrieval plugin vector db.
       let filteredSources: UrlContextSource[] = [];
       if (SAVE_CONTEXT_URLS) {
-        const urlPattern = new RegExp('(?:(?:https?|ftp|file):\/\/|www\.|ftp\.)(?:\([-A-Z0-9+&@#\/%=~_|$?!:,.]*\)|[-A-Z0-9+&@#\/%=~_|$?!:,.])*(?:\([-A-Z0-9+&@#\/%=~_|$?!:,.]*\)|[A-Z0-9+&@#\/%=~_|$])', 'gi');
+        const urlPattern = new RegExp('(?:(?:https?|ftp|file):\/\/|www\.|ftp\.)(?:\([-A-Z0-9+&@#\/%=~_|$?!:,.]*\)|[-A-Z0-9+&@#\/%=~_|$?!:,.])*(?:\([-A-Z0-9+&@#\/%\(\)=~_|$?!:,.]*\)|[A-Z0-9+&@#\/%\(\)=~_|$])', 'gi');
         const urls = userMessage.content.match(urlPattern) || []
 
         const urlContextSources: UrlContextSource[] = urls.map((item: any) => ({
@@ -159,7 +159,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<any>) => {
               pdfs.map(async (source) => {
                 try {
                   const timeoutPromise = new Promise((_, reject) =>
-                    setTimeout(() => reject(new Error('Request timed out')), 20000),
+                    setTimeout(() => reject(new Error('Request timed out')), 60000),
                   );
 
                   const formData = new FormData();
@@ -204,7 +204,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<any>) => {
               filteredSources.map(async (source) => {
                 try {
                   const timeoutPromise = new Promise((_, reject) =>
-                    setTimeout(() => reject(new Error('Request timed out')), 5000),
+                    setTimeout(() => reject(new Error('Request timed out')), 10000),
                   );
 
                   const res = (await Promise.race([
