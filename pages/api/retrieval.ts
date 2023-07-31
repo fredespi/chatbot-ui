@@ -295,8 +295,8 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<any>) => {
     Response:
     `;
       console.log("User message: " + userMessage.content.trim())
-      console.log("Prompt retrieved from vector db: " + sources[0].text.slice(-300) + "...")
-      console.log("Sources mentioned in prompt: " + filteredSources.map((source) => source.link).join(", "))
+      console.log("First context retrieved from vector db: " + sources[0]?.text + "...")
+      console.log("URLs mentioned in prompt: " + filteredSources.map((source) => source.link).join(", "))
       // const prompt: string = { role: 'user', content: answerPrompt };
       // const { model, messages, key, prompt, temperature } = (await req.json()) as ChatBody;
 
@@ -340,7 +340,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<any>) => {
       // encoding.free();
 
       // const stream = await OpenAIStream(model, promptToSend, temperatureToUse, key, messagesToSend);
-      console.log("About to send prompt to completion")
+      console.log("About to send prompt to completion...")
       const answerRes = await fetch(`${OPENAI_API_HOST}/v1/chat/completions`, {
         headers: {
           'Content-Type': 'application/json',
@@ -376,7 +376,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<any>) => {
         // Add the urls message to the start of the answer
         answer = fetchedUrlsMessage + answer;
       }
-
+      console.log("Done =======")
       res.status(200).json({answer: answer})
       // res.status(200).send(answerRes)
       // return new Response(stream);

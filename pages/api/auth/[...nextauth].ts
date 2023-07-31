@@ -1,8 +1,11 @@
 import NextAuth from 'next-auth'
 import Google from 'next-auth/providers/google'
-import {MongoDBAdapter} from "@auth/mongodb-adapter"
+import {MongoDBAdapter} from "@next-auth/mongodb-adapter"
 import clientPromise from "../../../lib/mongodb/client"
 import Github from "next-auth/providers/github";
+
+let clientId = process.env.GOOGLE_ID || 'not set'
+let clientSecret = process.env.GOOGLE_SECRET || 'not set'
 
 export default NextAuth({
   secret: process.env.NEXTAUTH_SECRET,
@@ -12,13 +15,13 @@ export default NextAuth({
   adapter: MongoDBAdapter(clientPromise),
   providers: [
     Google({
-      clientId: process.env.GOOGLE_ID,
-      clientSecret: process.env.GOOGLE_SECRET
+      clientId: clientId,
+      clientSecret: clientSecret
     }),
-    Github({
-      clientId: process.env.GITHUB_ID,
-      clientSecret: process.env.GITHUB_SECRET
-    })
+    // Github({
+    //   clientId: clientId,
+    //   clientSecret: clientSecret
+    // })
   ],
   debug: false,
   theme: {

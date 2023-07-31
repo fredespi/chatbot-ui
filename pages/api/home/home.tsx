@@ -341,6 +341,8 @@ const Home = ({
       });
     }
   }, [
+    // t,
+    // conversations,
     defaultModelId,
     dispatch,
     serverSideApiKeyIsSet,
