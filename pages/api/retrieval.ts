@@ -31,6 +31,9 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<any>) => {
       error: "You must be signed in to view the protected content on this page.",
     })
   } else {
+    // @ts-ignore
+    const emailAddress = session.user.email
+    console.log("user: ", emailAddress)
     try {
       const {messages, key, model, temperature} =
         (await req.body) as OpenaiRetrievalBody;
@@ -139,7 +142,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<any>) => {
                     source_id: source.link,
                     url: source.link,
                     created_at: new Date().toISOString(),
-                    author: 'silo-chatbot-ui',
+                    author: emailAddress,
                   }
                 };
               } else {
@@ -169,7 +172,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<any>) => {
                     source_id: source.link,
                     url: source.link,
                     created_at: new Date().toISOString(),
-                    author: 'silo-chatbot-ui',
+                    author: emailAddress,
                   }))
 
                   const res = (await Promise.race([
@@ -185,7 +188,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<any>) => {
                   const resJson = await res.json();
 
                   if (resJson) {
-                    console.log('Upsert-file pdf into db:' + JSON.stringify(resJson))
+                    console.log('Upserted pdf into db:' + JSON.stringify(resJson) + ' for user: ' + emailAddress)
                   }
                 } catch (error) {
                   console.error(error);
@@ -220,7 +223,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<any>) => {
                   const resJson = await res.json();
 
                   if (resJson) {
-                    console.log('Upsert documents into db:' + JSON.stringify(resJson))
+                    console.log('Upserted documents into db:' + JSON.stringify(resJson) + ' for user: ' + emailAddress)
                   }
                 } catch (error) {
                   console.error(error);
@@ -241,10 +244,14 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<any>) => {
             {
               query: query,
               top_k: 6,
+              filter: {
+                author: emailAddress,
+              }
             }
           ]
         }
       )
+      console.log('Querying retrieval plugin with body: ' + body)
       const openaiRetrievalRes = await fetch(
         `${process.env.RETRIEVAL_PLUGIN_URL}/query`,
         {
