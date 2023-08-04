@@ -28,6 +28,7 @@ import {ErrorMessageDiv} from './ErrorMessageDiv';
 import {ModelSelect} from './ModelSelect';
 import {SystemPrompt} from './SystemPrompt';
 import {TemperatureSlider} from './Temperature';
+import {ReleaseNotes} from './ReleaseNotes';
 import {MemoizedChatMessage} from './MemoizedChatMessage';
 
 interface Props {
@@ -399,16 +400,16 @@ export const Chat = memo(({ stopConversationRef }: Props) => {
                     <div className="flex h-full flex-col space-y-4 rounded-lg border border-neutral-200 p-4 dark:border-neutral-600">
                       <ModelSelect />
 
-                      <SystemPrompt
-                        conversation={selectedConversation}
-                        prompts={prompts}
-                        onChangePrompt={(prompt) =>
-                          handleUpdateConversation(selectedConversation, {
-                            key: 'prompt',
-                            value: prompt,
-                          })
-                        }
-                      />
+                      {/*<SystemPrompt*/}
+                      {/*  conversation={selectedConversation}*/}
+                      {/*  prompts={prompts}*/}
+                      {/*  onChangePrompt={(prompt) =>*/}
+                      {/*    handleUpdateConversation(selectedConversation, {*/}
+                      {/*      key: 'prompt',*/}
+                      {/*      value: prompt,*/}
+                      {/*    })*/}
+                      {/*  }*/}
+                      {/*/>*/}
 
                       <TemperatureSlider
                         label={t('Temperature')}
@@ -419,6 +420,9 @@ export const Chat = memo(({ stopConversationRef }: Props) => {
                           })
                         }
                       />
+                      <ReleaseNotes
+                        label={t('Release Notes')}
+                        />
                     </div>
                   )}
                 </div>
