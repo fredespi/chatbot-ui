@@ -420,6 +420,7 @@ export const Chat = memo(({ stopConversationRef }: Props) => {
                           })
                         }
                       />
+
                       <ReleaseNotes
                         label={t('Release Notes')}
                         />
