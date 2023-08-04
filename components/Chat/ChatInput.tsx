@@ -321,7 +321,7 @@ export const ChatInput = ({
               }`,
             }}
             placeholder={
-              t('Type a message or type "/" to select a prompt; include a URL to add it to the context.') || ''
+              t('Type a message or type "/" to select a prompt; include a URL to add its text to the context (only for your account).') || ''
             }
             value={content}
             rows={1}
