@@ -1,4 +1,6 @@
 .env
 .env.local
+.env.gcp
 node_modules
 test-results
+.next
