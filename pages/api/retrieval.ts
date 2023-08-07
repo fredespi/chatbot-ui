@@ -55,7 +55,12 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<any>) => {
     try {
       const {messages, key, model, temperature} =
         (await req.body) as OpenaiRetrievalBody;
+
+      // we want to remove the last message since we will reformat it to a userMessageToSend below
       const userMessage = messages[messages.length - 1];
+      if (messages.length > 0) {
+        messages.pop()
+      }
 
       // If the SAVE_CONTEXT_URLS env var is set, we'll try to fetch the text of any URLs in the user's message
       // and upsert them into the retrieval plugin vector db.
@@ -256,12 +261,12 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<any>) => {
       // now we can query the retrieval plugin
       const query = encodeURIComponent(userMessage.content.trim());
 
-      const body = JSON.stringify(
+      const body =
         {
           queries: [
             {
               query: query,
-              top_k: 6,
+              top_k: 3,
               filter: {
                 author: emailAddress,
               }
@@ -279,7 +284,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<any>) => {
             Authorization: `Bearer ${process.env.RETRIEVAL_BEARER_KEY}`,
           },
           method: 'POST',
-          body: body,
+          body: JSON.stringify(body),
         }
       );
 
@@ -293,36 +298,43 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<any>) => {
         text: item.text,
       }));
 
-      const prompt = endent`
-    Provide me with the information I requested. Use the sources to provide an accurate response. Respond in markdown format. Cite the sources you used as a markdown link as you use them at the end of each sentence by number of the source (ex: [[1]](link.com)). Provide an accurate response and then stop. Today's date is ${new Date().toLocaleDateString()}.
-    Important: If there are no sources, respond with "No sources found." and stop. If there are sources but the answer cannot be extracted from them, respond with "Not sure how to respond to that." and stop. If there are sources, and the answer can be extracted from the sources, respond with the information requested and then stop. Do not provide any additional information.
+      // log the first few lines of each result
+      logger.info('Vector db result count: ' + sources.length)
+      sources.forEach((source: any) => {
+        logger.info('\t' + source.sourceId + ': ' + source.text.slice(0, 200))
+      })
+
+      const systemPrompt = endent
+        `
+        Provide me with the information I requested. Use the sources to provide an accurate response. Respond in markdown format. Cite the sources you used as a markdown link as you use them at the end of each sentence by number of the source (ex: [[1]](link.com)). Provide an accurate response and then stop. Today's date is ${new Date().toLocaleDateString()}.
+        Important: If there are no sources, respond with "No sources found." and stop. If there are sources but the answer cannot be extracted from them, respond with "Not sure how to respond to that." and stop. If there are sources, and the answer can be extracted from the sources, respond with the information requested and then stop. Do not provide any additional information.
+        
+        Example Input:
+        What's the weather in San Francisco today?
     
-    Example Input:
-    What's the weather in San Francisco today?
-
-    Example Sources:
-    Weather data (https://www.google.com/search?q=weather+san+francisco)
-    The current weather in San Francisco is 70 degrees and sunny.
-
-    Example Response:
-    It's 70 degrees and sunny in San Francisco today. [[1]](https://www.google.com/search?q=weather+san+francisco)
-
-    Input:
-    ${userMessage.content.trim()}
-
-    Sources:
-    ${sources.map((source) => {
-        return endent`
-      ${source.sourceId} (${source.url}):
-      ${source.text}\n
-      `;
-      })}
-
-    Response:
-    `;
-      console.log("User message: " + userMessage.content.trim())
-      console.log("First context retrieved from vector db: " + sources[0]?.text + "...")
-      console.log("URLs mentioned in prompt: " + filteredSources.map((source) => source.link).join(", "))
+        Example Sources:
+        \"Weather data\" (https://www.google.com/search?q=weather+san+francisco):
+        The current weather in San Francisco is 70 degrees and sunny.
+    
+        Example Response:
+        It's 70 degrees and sunny in San Francisco today. [[1]](https://www.google.com/search?q=weather+san+francisco)
+        `;
+      const sourcesString = sources.map((source) => {
+        return endent`${source.sourceId} (${source.url}):
+          ${source.text}
+          `;
+      }).join('\n');
+      const userMessageToSend = endent`
+        Input:
+        ${userMessage.content.trim()}
+        
+        Sources:
+        ${sourcesString}
+        
+        Response:
+        `
+      logger.info("userMessageToSend:\n<<starts below>>\n" + userMessageToSend + "\n<<ends above>>")
+      logger.info("URLs mentioned in prompt: " + filteredSources.map((source) => source.link).join(", "))
       // const prompt: string = { role: 'user', content: answerPrompt };
       // const { model, messages, key, prompt, temperature } = (await req.json()) as ChatBody;
 
@@ -333,11 +345,11 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<any>) => {
       //   tiktokenModel.pat_str,
       // );
 
-      let promptToSend = `Use the sources to provide an accurate response. Respond in markdown format. Cite the sources you used as [1](link), etc, as you use them. Maximum 4 sentences.`;
+      // let promptToSend = `Use the sources to provide an accurate response. Respond in markdown format. Cite the sources you used as [1](link), etc, as you use them. Maximum 4 sentences.`;
       // if (!promptToSend) {
       //   promptToSend = DEFAULT_SYSTEM_PROMPT;
       // }
-      console.log("Prompt to send: " + promptToSend)
+      // logger.info("Prompt to send: " + promptToSend)
       let temperatureToUse = temperature;
       if (temperatureToUse == null) {
         temperatureToUse = DEFAULT_TEMPERATURE;
@@ -346,11 +358,11 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<any>) => {
       // const prompt_tokens = encoding.encode(promptToSend);
 
       // prune any older messages that don't fit. we keep the most recent ones
-      let charCount = promptToSend.length;
+      let charCount = systemPrompt.length;
       let messagesToSend: Message[] = [];
       messages.push({
         "role": "user",
-        "content": prompt,
+        "content": userMessageToSend,
       })
       for (let i = messages.length - 1; i >= 0; i--) {
         const message = messages[i];
@@ -366,7 +378,20 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<any>) => {
       // encoding.free();
 
       // const stream = await OpenAIStream(model, promptToSend, temperatureToUse, key, messagesToSend);
-      console.log("About to send prompt to completion...")
+      const promptBody = {
+        model: model.id,
+        messages: [
+          {
+            role: 'system',
+            content: systemPrompt,
+          },
+          ...messagesToSend,
+        ],
+        max_tokens: 1000,
+        temperature: temperatureToUse,
+        stream: false,
+      }
+      logger.info("About to send prompt to completion: ", promptBody)
       const answerRes = await fetch(`${OPENAI_API_HOST}/v1/chat/completions`, {
         headers: {
           'Content-Type': 'application/json',
@@ -376,13 +401,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<any>) => {
           }),
         },
         method: 'POST',
-        body: JSON.stringify({
-          model: model.id,
-          messages: messages,
-          max_tokens: 1000,
-          temperature: temperatureToUse,
-          stream: false,
-        }),
+        body: JSON.stringify(promptBody),
       });
 
       const {choices: choices2} = await answerRes.json();
