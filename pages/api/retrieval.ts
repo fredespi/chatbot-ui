@@ -17,6 +17,24 @@ import {Readability} from "@mozilla/readability";
 import {cleanSourceText} from "@/utils/server/google";
 import {UrlContextSource} from "@/types/urlContext";
 import {NextApiRequest, NextApiResponse} from "next";
+import winston from "winston";
+
+const logger = winston.createLogger({
+  level: 'info',
+  format: winston.format.combine(
+    winston.format.colorize(),
+    winston.format.timestamp({format: 'YYYY-MM-DD HH:mm:ss'}),
+    winston.format.printf(({level, message, timestamp, ...metadata}) => {
+      const metaString = Object.keys(metadata).length ? `\n${JSON.stringify(metadata, null, 2)}` : '';
+      return `${timestamp} ${level}: ${message}${metaString}`;
+    })
+  ),
+  transports: [
+    // new winston.transports.File({ filename: 'error.log', level: 'error' }),
+    // new winston.transports.File({ filename: 'combined.log' }),
+    new winston.transports.Console()
+  ]
+});
 
 // export const config = {
 //   runtime: 'edge',
@@ -33,7 +51,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<any>) => {
   } else {
     // @ts-ignore
     const emailAddress = session.user.email
-    console.log("user: ", emailAddress)
+    logger.info("User: " + emailAddress)
     try {
       const {messages, key, model, temperature} =
         (await req.body) as OpenaiRetrievalBody;
@@ -52,7 +70,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<any>) => {
           pdf: '',
         }));
 
-        console.log('Found urls', JSON.stringify(urlContextSources))
+        logger.info('Found urls: ' + urlContextSources)
         if (urlContextSources.length > 0) {
           const urlContextSourcesWithText: any = await Promise.all(
             urlContextSources.map(async (source) => {
@@ -116,7 +134,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<any>) => {
 
           filteredSources = urlContextSourcesWithText.filter(Boolean);
 
-          console.log('Fetched urls as pages or pdfs', filteredSources)
+          logger.info('Fetched urls as pages or pdfs' + filteredSources)
 
           // Now upsert the sources into the vector db
           if (filteredSources.length > 0) {
@@ -150,11 +168,11 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<any>) => {
               }
             }).filter(Boolean);
 
-            console.log("Preparing for upsert document urls: " + documents.length)
+            logger.info("Preparing for upsert document urls: " + documents.length)
 
             // Collect all the sources that are PDFs
             const pdfs: UrlContextSource[] = filteredSources.filter((source) => source.pdf);
-            console.log("Preparing for upsert PDF urls: " + pdfs.length)
+            logger.info("Preparing for upsert PDF urls: " + pdfs.length)
 
 
             // Upsert-file the PDFs
@@ -188,7 +206,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<any>) => {
                   const resJson = await res.json();
 
                   if (resJson) {
-                    console.log('Upserted pdf into db:' + JSON.stringify(resJson) + ' for user: ' + emailAddress)
+                    logger.info('Upserted pdf into db:' + JSON.stringify(resJson) + ' for user: ' + emailAddress)
                   }
                 } catch (error) {
                   console.error(error);
@@ -223,7 +241,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<any>) => {
                   const resJson = await res.json();
 
                   if (resJson) {
-                    console.log('Upserted documents into db:' + JSON.stringify(resJson) + ' for user: ' + emailAddress)
+                    logger.info('Upserted documents into db:' + JSON.stringify(resJson) + ' for user: ' + emailAddress)
                   }
                 } catch (error) {
                   console.error(error);
@@ -250,8 +268,9 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<any>) => {
             }
           ]
         }
-      )
-      console.log('Querying retrieval plugin with body: ' + body)
+
+      logger.info('Querying retrieval plugin with body: ', body)
+      // console.dir(body, {depth: null})
       const openaiRetrievalRes = await fetch(
         `${process.env.RETRIEVAL_PLUGIN_URL}/query`,
         {
@@ -368,7 +387,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<any>) => {
 
       const {choices: choices2} = await answerRes.json();
       let answer = choices2[0].message.content;
-      console.log("Answer retrieved from completion: " + answer.slice(-300) + "...")
+      logger.info("Answer retrieved from completion: " + answer.slice(-300) + "...")
 
       // Add a message about the urls we fetched to the answer
       if (filteredSources.length > 0) {
@@ -383,7 +402,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<any>) => {
         // Add the urls message to the start of the answer
         answer = fetchedUrlsMessage + answer;
       }
-      console.log("Done =======")
+      logger.info("Done =======")
       res.status(200).json({answer: answer})
       // res.status(200).send(answerRes)
       // return new Response(stream);
