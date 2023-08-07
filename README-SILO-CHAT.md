@@ -7,7 +7,7 @@ PDFs. It automatically parses the URLs from the chat messages.
 ### Build the docker image 
 (if there is an error like ```assertion failed [result.value != EEXIST]: VmTracker attempted to allocate existing mapping``` try turning off rosetta in docker desktop)
 ```bash
-docker build --platform linux/amd64 --no-cache -t europe-west4-docker.pkg.dev/silogen-dev/silogen-chat/silo-chat-ui:latest .
+docker build --platform linux/amd64 -t europe-west4-docker.pkg.dev/silogen-dev/silogen-chat/silo-chat-ui:latest .
 ```
 
 ### Run the docker image
