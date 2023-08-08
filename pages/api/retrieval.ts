@@ -1,10 +1,11 @@
 import {getServerSession} from "next-auth/next"
 import authOptions from "./auth/[...nextauth]"
-import {DEFAULT_TEMPERATURE, OPENAI_API_HOST, SAVE_CONTEXT_URLS} from '@/utils/app/const';
+import {DEFAULT_TEMPERATURE, OPENAI_API_HOST, SAVE_CONTEXT_URLS, SECONDARY_OPENAI_API_HOST} from '@/utils/app/const';
 // import { cleanSourceText } from '@/utils/server/google';
 import {OpenaiRetrievalBody, OpenaiRetrievalDocument, OpenaiRetrievalSource} from '@/types/retrieval';
 import endent from 'endent';
 import {OpenAIError, OpenAIStream} from '@/utils/server';
+//import {experimental_buildLlama2Prompt} from '@/utils/server/llama2';
 import {Message} from '@/types/chat';
 
 // @ts-expect-error
@@ -18,6 +19,7 @@ import {cleanSourceText} from "@/utils/server/google";
 import {UrlContextSource} from "@/types/urlContext";
 import {NextApiRequest, NextApiResponse} from "next";
 import winston from "winston";
+import {OpenAIModelID} from "@/types/openai";
 
 const logger = winston.createLogger({
   level: 'info',
@@ -378,6 +380,15 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<any>) => {
       // encoding.free();
 
       // const stream = await OpenAIStream(model, promptToSend, temperatureToUse, key, messagesToSend);
+      // const llamaMessagesToSend: Message[] = [
+      //     {
+      //       role: 'system',
+      //       content: systemPrompt,
+      //     },
+      //     ...messagesToSend,
+      //   ]
+      // const llamaMessagesPrompt = experimental_buildLlama2Prompt(llamaMessagesToSend)
+      // logger.info("llamaMessages prompt:\n<<starts below>>\n" + llamaMessagesPrompt + "\n<<ends above>>")
       const promptBody = {
         model: model.id,
         messages: [
@@ -391,8 +402,14 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<any>) => {
         temperature: temperatureToUse,
         stream: false,
       }
+
       logger.info("About to send prompt to completion: ", promptBody)
-      const answerRes = await fetch(`${OPENAI_API_HOST}/v1/chat/completions`, {
+
+      let openAiApiHostToUse = OPENAI_API_HOST;
+      if (model.id === OpenAIModelID.LLAMA_2_7B) {
+        openAiApiHostToUse = SECONDARY_OPENAI_API_HOST;
+      }
+      const answerRes = await fetch(`${openAiApiHostToUse}/v1/chat/completions`, {
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${key ? key : process.env.OPENAI_API_KEY}`,
@@ -406,7 +423,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<any>) => {
 
       const {choices: choices2} = await answerRes.json();
       let answer = choices2[0].message.content;
-      logger.info("Answer retrieved from completion: " + answer.slice(-300) + "...")
+      logger.info("Answer retrieved from completion: " + answer)
 
       // Add a message about the urls we fetched to the answer
       if (filteredSources.length > 0) {

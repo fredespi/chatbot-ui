@@ -5,6 +5,9 @@ export const DEFAULT_SYSTEM_PROMPT =
 export const OPENAI_API_HOST =
   process.env.OPENAI_API_HOST || 'https://api.openai.com';
 
+export const SECONDARY_OPENAI_API_HOST =
+  process.env.SECONDARY_OPENAI_API_HOST || '';
+
 export const DEFAULT_TEMPERATURE =
   parseFloat(process.env.NEXT_PUBLIC_DEFAULT_TEMPERATURE || "0.2");
 
