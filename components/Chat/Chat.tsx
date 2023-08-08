@@ -30,6 +30,8 @@ import {SystemPrompt} from './SystemPrompt';
 import {TemperatureSlider} from './Temperature';
 import {ReleaseNotes} from './ReleaseNotes';
 import {MemoizedChatMessage} from './MemoizedChatMessage';
+import Image from 'next/image'
+import {getSettings} from "@/utils/app/settings";
 
 interface Props {
   stopConversationRef: MutableRefObject<boolean>;
@@ -64,6 +66,7 @@ export const Chat = memo(({ stopConversationRef }: Props) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const theme = getSettings().theme;
 
   const handleSend = useCallback(
     async (message: Message, deleteCount = 0, plugin: Plugin | null = null) => {
@@ -389,16 +392,36 @@ export const Chat = memo(({ stopConversationRef }: Props) => {
                   <div className="text-center text-3xl font-semibold text-gray-800 dark:text-gray-100">
                     {models.length === 0 ? (
                       <div>
-                        <Spinner size="16px" className="mx-auto" />
+                        <Spinner size="16px" className="mx-auto"/>
                       </div>
                     ) : (
-                      'Silogen-Chat'
+                      <div className="flex flex-col items-center">
+                        <div className="w-40">
+                          {theme === 'dark' ? (
+                            <Image
+                              src="/Silogen-Logo-Full-White.png" // Path to your image
+                              alt="Silogen logotype"
+                              width={1341} // Desired width
+                              height={342} // Desired height
+                            />
+                          ) : (
+                            <Image
+                              src="/Silogen-Logo-Full-Black.png" // Path to your image
+                              alt="Silogen logotype"
+                              width={1341} // Desired width
+                              height={342} // Desired height
+                            />
+                          )}
+                        </div>
+                        <p className="text-center text-base">Chat</p>
+                      </div>
                     )}
                   </div>
 
                   {models.length > 0 && (
-                    <div className="flex h-full flex-col space-y-4 rounded-lg border border-neutral-200 p-4 dark:border-neutral-600">
-                      <ModelSelect />
+                    <div
+                      className="flex h-full flex-col space-y-4 rounded-lg border border-neutral-200 p-4 dark:border-neutral-600">
+                      <ModelSelect/>
 
                       {/*<SystemPrompt*/}
                       {/*  conversation={selectedConversation}*/}
@@ -423,7 +446,7 @@ export const Chat = memo(({ stopConversationRef }: Props) => {
 
                       <ReleaseNotes
                         label={t('Release Notes')}
-                        />
+                      />
                     </div>
                   )}
                 </div>
@@ -431,6 +454,22 @@ export const Chat = memo(({ stopConversationRef }: Props) => {
             ) : (
               <>
                 <div className="sticky top-0 z-10 flex justify-center border border-b-neutral-300 bg-neutral-100 py-2 text-sm text-neutral-500 dark:border-none dark:bg-[#444654] dark:text-neutral-200">
+                  <div className={`w-20 mr-1`}>{theme === 'dark' ? (
+                    <Image
+                      src="/Silogen-Logo-Full-White.png" // Path to your image
+                      alt="Silogen logotype"
+                      width={1341} // Desired width
+                      height={342} // Desired height
+                    />
+                  ) : (
+                    <Image
+                      src="/Silogen-Logo-Full-Black.png" // Path to your image
+                      alt="Silogen logotype"
+                      width={1341} // Desired width
+                      height={342} // Desired height
+                    />
+                  )}
+                  </div><div className="mr-1">|</div>
                   {t('Model')}: {selectedConversation?.model.name} | {t('Temp')}
                   : {selectedConversation?.temperature} |
                   <button
