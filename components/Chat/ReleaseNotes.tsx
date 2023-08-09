@@ -20,7 +20,8 @@ export const ReleaseNotes: FC<Props> = ({
       </label>
       <span className="text-[12px] text-black/50 dark:text-white/50 text-sm">
         <ul className="list-disc list-inside">
-          <li>2023-08-08
+          <li>2023-08-09: Streaming responses</li>
+          <li>2023-08-08:
             <ul className="pl-5 list-disc list-inside">
               <li>Access to Silo&apos;s Llama-2-7b-chat-hf installation</li>
               <li>Choose models from OpenAI or Silo AI for each conversation</li>

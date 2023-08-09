@@ -10,6 +10,11 @@ PDFs. It automatically parses the URLs from the chat messages.
 docker build --platform linux/amd64 -t europe-west4-docker.pkg.dev/silogen-dev/silogen-chat/silo-chat-ui:latest .
 ```
 
+### Test the docker image to see that the server starts correctly (without env.local)
+```bash
+docker run -p 80:80 europe-west4-docker.pkg.dev/silogen-dev/silogen-chat/silo-chat-ui:latest
+```
+
 ### Run the docker image
 ```bash
 docker run -p 80:80 --env-file .env.local europe-west4-docker.pkg.dev/silogen-dev/silogen-chat/silo-chat-ui:latest
