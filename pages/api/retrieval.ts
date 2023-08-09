@@ -268,7 +268,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<any>) => {
           queries: [
             {
               query: query,
-              top_k: 3,
+              top_k: 4,
               filter: {
                 author: emailAddress,
               }
@@ -400,48 +400,35 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<any>) => {
         ],
         max_tokens: 1000,
         temperature: temperatureToUse,
-        stream: false,
+        stream: true,
       }
 
       logger.info("About to send prompt to completion: ", promptBody)
 
-      let openAiApiHostToUse = OPENAI_API_HOST;
-      if (model.id === OpenAIModelID.LLAMA_2_7B) {
-        openAiApiHostToUse = SECONDARY_OPENAI_API_HOST;
-      }
-      const answerRes = await fetch(`${openAiApiHostToUse}/v1/chat/completions`, {
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${key ? key : process.env.OPENAI_API_KEY}`,
-          ...(process.env.OPENAI_ORGANIZATION && {
-            'OpenAI-Organization': process.env.OPENAI_ORGANIZATION,
-          }),
-        },
-        method: 'POST',
-        body: JSON.stringify(promptBody),
-      });
+      const stream = await OpenAIStream(model, systemPrompt, temperatureToUse, `${key ? key : process.env.OPENAI_API_KEY}`, messagesToSend);
+      // res.setHeader('Content-Type', 'application/json');
+      // res.setHeader('Transfer-Encoding', 'chunked');
+      const reader = stream.getReader();
 
-      const {choices: choices2} = await answerRes.json();
-      let answer = choices2[0].message.content;
-      logger.info("Answer retrieved from completion: " + answer)
-
-      // Add a message about the urls we fetched to the answer
-      if (filteredSources.length > 0) {
-        let fetchedUrlsMessage = "[ Saved content from these urls: ";
-
-        // for each entry in filteredSources, add a message to the answer
-        for (let i = 0; i < filteredSources.length; i++) {
-          fetchedUrlsMessage += `${filteredSources[i].link} `;
+      const processStream = async () => {
+        try {
+          while (true) {
+            const {value, done} = await reader.read();
+            if (done) {
+              break;
+            }
+            res.write(value);
+          }
+        } catch (error) {
+          console.error('Error reading stream:', error);
+          res.status(500);
+        } finally {
+          res.end();
         }
-        fetchedUrlsMessage += "]\n\n";
+      };
 
-        // Add the urls message to the start of the answer
-        answer = fetchedUrlsMessage + answer;
-      }
-      logger.info("Done =======")
-      res.status(200).json({answer: answer})
-      // res.status(200).send(answerRes)
-      // return new Response(stream);
+      await processStream();
+      logger.info("Stream ended")
     } catch (error) {
       console.error('there was an error: ' + error);
       if (error instanceof OpenAIError) {

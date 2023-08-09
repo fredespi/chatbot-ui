@@ -126,7 +126,7 @@ export const Chat = memo(({ stopConversationRef }: Props) => {
           homeDispatch({ field: 'messageIsStreaming', value: false });
           return;
         }
-        if (!plugin) {
+        if (!plugin || plugin.id === PluginID.OPENAI_RETRIEVAL) {
           if (updatedConversation.messages.length === 1) {
             const { content } = message;
             const customName =
