@@ -20,6 +20,7 @@ export const ReleaseNotes: FC<Props> = ({
       </label>
       <span className="text-[12px] text-black/50 dark:text-white/50 text-sm">
         <ul className="list-disc list-inside">
+          <li>2023-08-10: File uploads</li>
           <li>2023-08-09: Streaming responses</li>
           <li>2023-08-08:
             <ul className="pl-5 list-disc list-inside">

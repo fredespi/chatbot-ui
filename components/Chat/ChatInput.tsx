@@ -3,6 +3,7 @@ import {
   IconPlayerStop,
   IconRepeat,
   IconSend,
+  IconFileUpload,
 } from '@tabler/icons-react';
 import {
   KeyboardEvent,
@@ -14,16 +15,16 @@ import {
   useState,
 } from 'react';
 
-import { useTranslation } from 'next-i18next';
+import {useTranslation} from 'next-i18next';
 
-import { Message } from '@/types/chat';
+import {Message} from '@/types/chat';
 import {Plugin, PluginID, Plugins} from '@/types/plugin';
-import { Prompt } from '@/types/prompt';
+import {Prompt} from '@/types/prompt';
 
 import HomeContext from '@/pages/api/home/home.context';
 
-import { PromptList } from './PromptList';
-import { VariableModal } from './VariableModal';
+import {PromptList} from './PromptList';
+import {VariableModal} from './VariableModal';
 
 interface Props {
   onSend: (message: Message, plugin: Plugin | null) => void;
@@ -35,18 +36,17 @@ interface Props {
 }
 
 export const ChatInput = ({
-  onSend,
-  onRegenerate,
-  onScrollDownClick,
-  stopConversationRef,
-  textareaRef,
-  showScrollDownButton,
-}: Props) => {
-  const { t } = useTranslation('chat');
+                            onSend,
+                            onRegenerate,
+                            onScrollDownClick,
+                            stopConversationRef,
+                            textareaRef,
+                            showScrollDownButton,
+                          }: Props) => {
+  const {t} = useTranslation('chat');
 
   const {
-    state: { selectedConversation, messageIsStreaming, prompts },
-
+    state: {selectedConversation, messageIsStreaming, prompts},
   } = useContext(HomeContext);
 
   const [content, setContent] = useState<string>();
@@ -58,6 +58,8 @@ export const ChatInput = ({
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [showPluginSelect, setShowPluginSelect] = useState(false);
   const [plugin, setPlugin] = useState<Plugin | null>(Plugins[PluginID.OPENAI_RETRIEVAL]);
+  const [fileIsUploading, setFileIsUploading] = useState(false);
+  const [fileUploadSuccess, setFileUploadSuccess] = useState(false);
 
   const promptListRef = useRef<HTMLUListElement | null>(null);
 
@@ -73,7 +75,7 @@ export const ChatInput = ({
       alert(
         t(
           `Message limit is {{maxLength}} characters. You have entered {{valueLength}} characters.`,
-          { maxLength, valueLength: value.length },
+          {maxLength, valueLength: value.length},
         ),
       );
       return;
@@ -93,7 +95,7 @@ export const ChatInput = ({
       return;
     }
 
-    onSend({ role: 'user', content }, plugin);
+    onSend({role: 'user', content}, plugin);
     setContent('');
     setPlugin(Plugins[PluginID.OPENAI_RETRIEVAL]);
 
@@ -219,6 +221,73 @@ export const ChatInput = ({
     }
   };
 
+  const fileInput = useRef<HTMLInputElement>(null);
+
+  const handleUploadFile = () => {
+    // Trigger the click event of the file input
+    if (fileInput.current) {
+      fileInput.current.click();
+    }
+  };
+
+  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    event.preventDefault()
+    // Check if event.target.files is not null and has length before accessing its elements
+    if (event.target.files && event.target.files.length > 0) {
+      setFileIsUploading(true)
+      setFileUploadSuccess(false)
+      const formData = new FormData();
+
+      // Loop through each file and append it to the formData
+      for (let i = 0; i < event.target.files.length; i++) {
+        const file = event.target.files[i];
+        formData.append(file.name, file);
+      }
+
+      try {
+        const response = await fetch('/api/savefiles', {
+          // headers: {
+          //   'Content-Type': 'multipart/form-data',
+          // },
+          method: 'POST',
+          body: formData,
+        });
+
+        if (response.ok) {
+          setFileIsUploading(false)
+          setFileUploadSuccess(true)
+        } else {
+          setFileIsUploading(false)
+          setFileUploadSuccess(false)
+          alert('Upload failed');
+          console.log('Upload failed')
+        }
+      } catch (error) {
+        console.error('Failed to save files', error);
+      } finally {
+        // After successful upload, reset the input field
+        resetFileUpload(event)
+      }
+    }
+  };
+
+  const resetFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (event.target.files && event.target.files.length > 0) {
+      event.target.value = '';
+    }
+    // setFileIsUploading(false)
+    // setFileUploadSuccess(false)
+  }
+
+  useEffect(() => {
+    if (!fileIsUploading && fileUploadSuccess) {
+      setTimeout(() => {
+        alert('Upload complete');
+      }, 10);
+      console.log('Upload complete')
+    }
+  }, [fileIsUploading, fileUploadSuccess]);
+
   useEffect(() => {
     if (promptListRef.current) {
       promptListRef.current.scrollTop = activePromptIndex * 30;
@@ -253,14 +322,16 @@ export const ChatInput = ({
   }, []);
 
   return (
-    <div className="absolute bottom-0 left-0 w-full border-transparent bg-gradient-to-b from-transparent via-white to-white pt-6 dark:border-white/20 dark:via-[#343541] dark:to-[#343541] md:pt-2">
-      <div className="stretch mx-2 mt-4 flex flex-row gap-3 last:mb-2 md:mx-4 md:mt-[52px] md:last:mb-6 lg:mx-auto lg:max-w-3xl">
+    <div
+      className="absolute bottom-0 left-0 w-full border-transparent bg-gradient-to-b from-transparent via-white to-white pt-6 dark:border-white/20 dark:via-[#343541] dark:to-[#343541] md:pt-2">
+      <div
+        className="stretch mx-2 mt-4 flex flex-row gap-3 last:mb-2 md:mx-4 md:mt-[52px] md:last:mb-6 lg:mx-auto lg:max-w-3xl">
         {messageIsStreaming && (
           <button
             className="absolute top-0 left-0 right-0 mx-auto mb-3 flex w-fit items-center gap-3 rounded border border-neutral-200 bg-white py-2 px-4 text-black hover:opacity-50 dark:border-neutral-600 dark:bg-[#343541] dark:text-white md:mb-0 md:mt-2"
             onClick={handleStopConversation}
           >
-            <IconPlayerStop size={16} /> {t('Stop Generating')}
+            <IconPlayerStop size={16}/> {t('Stop Generating')}
           </button>
         )}
 
@@ -271,11 +342,12 @@ export const ChatInput = ({
               className="absolute top-0 left-0 right-0 mx-auto mb-3 flex w-fit items-center gap-3 rounded border border-neutral-200 bg-white py-2 px-4 text-black hover:opacity-50 dark:border-neutral-600 dark:bg-[#343541] dark:text-white md:mb-0 md:mt-2"
               onClick={onRegenerate}
             >
-              <IconRepeat size={16} /> {t('Regenerate response')}
+              <IconRepeat size={16}/> {t('Regenerate response')}
             </button>
           )}
 
-        <div className="relative mx-2 flex w-full flex-grow flex-col rounded-md border border-black/10 bg-white shadow-[0_0_10px_rgba(0,0,0,0.10)] dark:border-gray-900/50 dark:bg-[#40414F] dark:text-white dark:shadow-[0_0_15px_rgba(0,0,0,0.10)] sm:mx-4">
+        <div
+          className="relative mx-2 flex w-full flex-grow flex-col rounded-md border border-black/10 bg-white shadow-[0_0_10px_rgba(0,0,0,0.10)] dark:border-gray-900/50 dark:bg-[#40414F] dark:text-white dark:shadow-[0_0_15px_rgba(0,0,0,0.10)] sm:mx-4">
           {/*<button*/}
           {/*  className="absolute left-2 top-2 rounded-sm p-1 text-neutral-800 opacity-60 hover:bg-neutral-200 hover:text-neutral-900 dark:bg-opacity-50 dark:text-neutral-100 dark:hover:text-neutral-200"*/}
           {/*  onClick={() => setShowPluginSelect(!showPluginSelect)}*/}
@@ -321,10 +393,11 @@ export const ChatInput = ({
               }`,
             }}
             placeholder={
-              t('Type a message or type "/" to select a prompt; include a URL to add its text to the context (only for your account).') || ''
+              t('Type a message or type "/" to select a prompt; include URLs or upload (multiple) local files to add their text to the ' +
+                'context (your account only)') || ''
             }
             value={content}
-            rows={1}
+            rows={2}
             onCompositionStart={() => setIsTyping(true)}
             onCompositionEnd={() => setIsTyping(false)}
             onChange={handleChange}
@@ -335,12 +408,27 @@ export const ChatInput = ({
             className="absolute right-2 top-2 rounded-sm p-1 text-neutral-800 opacity-60 hover:bg-neutral-200 hover:text-neutral-900 dark:bg-opacity-50 dark:text-neutral-100 dark:hover:text-neutral-200"
             onClick={handleSend}
           >
-            {messageIsStreaming ? (
-              <div className="h-4 w-4 animate-spin rounded-full border-t-2 border-neutral-800 opacity-60 dark:border-neutral-100"></div>
+            {messageIsStreaming || fileIsUploading ? (
+              <div
+                className="h-4 w-4 animate-spin rounded-full border-t-2 border-neutral-800 opacity-60 dark:border-neutral-100"></div>
             ) : (
-              <IconSend size={18} />
+              <IconSend size={18}/>
             )}
           </button>
+          <button
+            className="absolute right-2 bottom-1 rounded-sm p-1 text-neutral-800 opacity-60 hover:bg-neutral-200 hover:text-neutral-900 dark:bg-opacity-50 dark:text-neutral-100 dark:hover:text-neutral-200"
+            onClick={handleUploadFile}
+            title="Upload file"
+          >
+            {fileIsUploading ? (
+              <div
+                className="h-4 w-4 animate-spin rounded-full border-t-2 border-neutral-800 opacity-60 dark:border-neutral-100"></div>
+            ) : (
+              <IconFileUpload size={18}/>
+            )}
+          </button>
+          {/* Hidden file input */}
+          <input type="file" multiple ref={fileInput} style={{display: 'none'}} onChange={handleFileChange}/>
 
           {showScrollDownButton && (
             <div className="absolute bottom-12 right-0 lg:bottom-0 lg:-right-10">
@@ -348,7 +436,7 @@ export const ChatInput = ({
                 className="flex h-7 w-7 items-center justify-center rounded-full bg-neutral-300 text-gray-800 shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-neutral-200"
                 onClick={onScrollDownClick}
               >
-                <IconArrowDown size={18} />
+                <IconArrowDown size={18}/>
               </button>
             </div>
           )}

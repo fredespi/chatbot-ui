@@ -16,7 +16,7 @@ import {Tiktoken, init} from '@dqbd/tiktoken/lite/init';
 import jsdom, {JSDOM} from "jsdom";
 import {Readability} from "@mozilla/readability";
 import {cleanSourceText} from "@/utils/server/google";
-import {UrlContextSource} from "@/types/urlContext";
+import {ContextSource} from "@/types/urlContext";
 import {NextApiRequest, NextApiResponse} from "next";
 import winston from "winston";
 import {OpenAIModelID} from "@/types/openai";
@@ -66,15 +66,15 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<any>) => {
 
       // If the SAVE_CONTEXT_URLS env var is set, we'll try to fetch the text of any URLs in the user's message
       // and upsert them into the retrieval plugin vector db.
-      let filteredSources: UrlContextSource[] = [];
+      let filteredSources: ContextSource[] = [];
       if (SAVE_CONTEXT_URLS) {
         const urlPattern = new RegExp('(?:(?:https?|ftp|file):\/\/|www\.|ftp\.)(?:\([-A-Z0-9+&@#\/%=~_|$?!:,.]*\)|[-A-Z0-9+&@#\/%=~_|$?!:,.])*(?:\([-A-Z0-9+&@#\/%\(\)=~_|$?!:,.]*\)|[A-Z0-9+&@#\/%\(\)=~_|$])', 'gi');
         const urls = userMessage.content.match(urlPattern) || []
 
-        const urlContextSources: UrlContextSource[] = urls.map((item: any) => ({
+        const urlContextSources: ContextSource[] = urls.map((item: any) => ({
           link: item,
           text: '',
-          pdf: '',
+          file: '',
         }));
 
         logger.info('Found urls: ' + urlContextSources)
@@ -104,8 +104,8 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<any>) => {
                   const pdfBuffer = await res.blob();
                   return {
                     ...source,
-                    pdf: pdfBuffer,
-                  } as UrlContextSource;
+                    file: pdfBuffer,
+                  } as ContextSource;
                 }
 
                 const html = await res.text();
@@ -128,7 +128,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<any>) => {
                     ...source,
                     // TODO: switch to tokens
                     text: sourceText,
-                  } as UrlContextSource;
+                  } as ContextSource;
                 }
 
                 return null;
@@ -158,7 +158,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<any>) => {
 
             // Collect all the sources that are not PDFs and create documents from them
             const documents: (OpenaiRetrievalDocument | null)[] = filteredSources.map((source) => {
-              if (!source.pdf) {
+              if (!source.file) {
                 return {
                   id: source.link,
                   text: source.text,
@@ -178,7 +178,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<any>) => {
             logger.info("Preparing for upsert document urls: " + documents.length)
 
             // Collect all the sources that are PDFs
-            const pdfs: UrlContextSource[] = filteredSources.filter((source) => source.pdf);
+            const pdfs: ContextSource[] = filteredSources.filter((source) => source.file);
             logger.info("Preparing for upsert PDF urls: " + pdfs.length)
 
 
@@ -191,7 +191,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<any>) => {
                   );
 
                   const formData = new FormData();
-                  formData.append('file', source.pdf)
+                  formData.append('file', source.file)
                   formData.append('metadata', JSON.stringify({
                     source: 'file',
                     source_id: source.link,
@@ -406,8 +406,8 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<any>) => {
       logger.info("About to send prompt to completion: ", promptBody)
 
       const stream = await OpenAIStream(model, systemPrompt, temperatureToUse, `${key ? key : process.env.OPENAI_API_KEY}`, messagesToSend);
-      // res.setHeader('Content-Type', 'application/json');
-      // res.setHeader('Transfer-Encoding', 'chunked');
+
+      // from https://github.com/vercel/next.js/discussions/46058
       const reader = stream.getReader();
 
       const processStream = async () => {

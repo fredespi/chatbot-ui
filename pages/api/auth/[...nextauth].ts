@@ -1,4 +1,4 @@
-import NextAuth from 'next-auth'
+import NextAuth, {NextAuthOptions} from 'next-auth'
 import Google from 'next-auth/providers/google'
 import {MongoDBAdapter} from "@next-auth/mongodb-adapter"
 import clientPromise from "../../../lib/mongodb/client"
@@ -7,7 +7,7 @@ import Github from "next-auth/providers/github";
 let clientId = process.env.GOOGLE_ID || 'not set'
 let clientSecret = process.env.GOOGLE_SECRET || 'not set'
 
-export default NextAuth({
+export const authOptions: NextAuthOptions = {
   secret: process.env.NEXTAUTH_SECRET,
   session: {
     strategy: "jwt",
@@ -55,4 +55,5 @@ export default NextAuth({
   //     return token
   //   }
   // }
-})
+};
+export default NextAuth(authOptions)
