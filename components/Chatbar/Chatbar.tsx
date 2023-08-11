@@ -186,6 +186,8 @@ export const Chatbar = () => {
     }
   };
 
+  const handleClearIndex = () => {}
+
   useEffect(() => {
     if (searchTerm) {
       chatDispatch({
@@ -210,6 +212,7 @@ export const Chatbar = () => {
     <ChatbarContext.Provider
       value={{
         ...chatBarContextValue,
+        handleClearIndex,
         handleDeleteConversation,
         handleClearConversations,
         handleImportConversations,

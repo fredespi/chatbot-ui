@@ -245,7 +245,7 @@ export const ChatInput = ({
       }
 
       try {
-        const response = await fetch('/api/savefiles', {
+        const response = await fetch('/api/crud', {
           // headers: {
           //   'Content-Type': 'multipart/form-data',
           // },
