@@ -6,6 +6,17 @@ import getLogger from "@/utils/server/logger";
 
 const logger = getLogger();
 
+const upsertUrl = `${process.env.RETRIEVAL_PLUGIN_URL}/upsert`;
+const upsertFileUrl = `${process.env.RETRIEVAL_PLUGIN_URL}/upsert-file`;
+const upsertHeaders = {
+  'Authorization': `Bearer ${process.env.RETRIEVAL_BEARER_KEY}`,
+  'Content-Type': 'application/json'
+};
+const upsertFileHeaders = {
+  'Authorization': `Bearer ${process.env.RETRIEVAL_BEARER_KEY}`,
+  // 'Content-Type': 'application/pdf'
+};
+
 async function protectEndpointAndGetUserEmail() {
   const session = await getServerSession(authOptions)
 
@@ -15,6 +26,18 @@ async function protectEndpointAndGetUserEmail() {
 
   // @ts-ignore
   return session.user.email;
+}
+
+export async function DELETE(request: Request) {
+  try {
+    const emailAddress = await protectEndpointAndGetUserEmail();
+    logger.info("User: " + emailAddress)
+
+
+  } catch (error) {
+    console.error('there was an error: ' + error);
+    return NextResponse.json({status: 500, message: JSON.stringify(error)});
+  }
 }
 
 export async function POST(request: Request) {
@@ -42,16 +65,6 @@ export async function POST(request: Request) {
 
     // Now upsert the sources into the vector db
     if (filteredSources.length > 0) {
-      const upsertUrl = `${process.env.RETRIEVAL_PLUGIN_URL}/upsert`;
-      const upsertFileUrl = `${process.env.RETRIEVAL_PLUGIN_URL}/upsert-file`;
-      const upsertHeaders = {
-        'Authorization': `Bearer ${process.env.RETRIEVAL_BEARER_KEY}`,
-        'Content-Type': 'application/json'
-      };
-      const upsertFileHeaders = {
-        'Authorization': `Bearer ${process.env.RETRIEVAL_BEARER_KEY}`,
-        // 'Content-Type': 'application/pdf'
-      };
 
       logger.info("Preparing for upsert files: " + fileSources.length)
 
