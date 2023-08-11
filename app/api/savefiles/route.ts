@@ -7,6 +7,7 @@ import getLogger from "@/utils/server/logger";
 const logger = getLogger();
 
 export async function POST(request: Request) {
+  // in order for this to work, since it is experimental, we need to include the mongo db env var when building the app
   const session = await getServerSession(authOptions)
 
   if (!session) {

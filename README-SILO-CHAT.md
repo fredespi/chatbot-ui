@@ -6,8 +6,9 @@ PDFs. It automatically parses the URLs from the chat messages.
 
 ### Build the docker image 
 (if there is an error like ```assertion failed [result.value != EEXIST]: VmTracker attempted to allocate existing mapping``` try turning off rosetta in docker desktop)
+If there is an error from mongo db during building it's ok. See the dockerfile for more information.
 ```bash
-docker build --platform linux/amd64 -t europe-west4-docker.pkg.dev/silogen-dev/silogen-chat/silo-chat-ui:latest .
+docker build --platform linux/amd64 -t europe-west4-docker.pkg.dev/silogen-dev/silogen-chat/silo-chat-ui:latest . 2>&1 | tee build.log
 ```
 
 ### Test the docker image to see that the server starts correctly (without env.local)

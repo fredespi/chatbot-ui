@@ -2,6 +2,8 @@
 FROM node:19-alpine AS base
 WORKDIR /app
 COPY package*.json ./
+# we need this because mongo db needs its env var to be set when we build "npm run build". See app/api/savefiles/route.ts
+COPY .env.local.dummy .env.local
 
 # ---- Dependencies ----
 FROM base AS dependencies
