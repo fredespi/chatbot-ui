@@ -15,6 +15,7 @@ import { Key } from '../../Settings/Key';
 import { SidebarButton } from '../../Sidebar/SidebarButton';
 import ChatbarContext from '../Chatbar.context';
 import { ClearConversations } from './ClearConversations';
+import { ClearIndex } from './ClearIndex';
 import { PluginKeys } from './PluginKeys';
 
 export const ChatbarSettings = () => {
@@ -35,6 +36,7 @@ export const ChatbarSettings = () => {
 
   const {
     handleClearConversations,
+    handleClearIndex,
     handleImportConversations,
     handleExportData,
     handleApiKeyChange,
@@ -72,6 +74,9 @@ export const ChatbarSettings = () => {
           setIsSettingDialog(false);
         }}
       />
+
+      <ClearIndex onClearIndex={handleClearIndex} />
+
 
       <SidebarButton
         text={session ? t('Sign out') + " " + session.user?.name : t('Sign in')}

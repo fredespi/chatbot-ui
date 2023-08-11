@@ -8,12 +8,16 @@ const logger = getLogger();
 
 const upsertUrl = `${process.env.RETRIEVAL_PLUGIN_URL}/upsert`;
 const upsertFileUrl = `${process.env.RETRIEVAL_PLUGIN_URL}/upsert-file`;
-const upsertHeaders = {
+const deleteUrl = `${process.env.RETRIEVAL_PLUGIN_URL}/delete`;
+const authHeader = {
   'Authorization': `Bearer ${process.env.RETRIEVAL_BEARER_KEY}`,
+}
+const upsertHeaders = {
+  ...authHeader,
   'Content-Type': 'application/json'
 };
 const upsertFileHeaders = {
-  'Authorization': `Bearer ${process.env.RETRIEVAL_BEARER_KEY}`,
+  ...authHeader,
   // 'Content-Type': 'application/pdf'
 };
 
@@ -33,7 +37,21 @@ export async function DELETE(request: Request) {
     const emailAddress = await protectEndpointAndGetUserEmail();
     logger.info("User: " + emailAddress)
 
+    // get the body from the request and parse it as JSON
+    const body = await request.json();
 
+    // send the body forward to the delete endpoint
+    logger.info("Deleting: " + JSON.stringify(body))
+    const deleteResponse = await fetch(deleteUrl, {
+      method: 'DELETE',
+      headers: upsertHeaders,
+      body: JSON.stringify(body)
+    });
+
+    if (deleteResponse.status !== 200) {
+      throw new Error("Error deleting: " + JSON.stringify(body))
+    }
+    return NextResponse.json("ok")
   } catch (error) {
     console.error('there was an error: ' + error);
     return NextResponse.json({status: 500, message: JSON.stringify(error)});
