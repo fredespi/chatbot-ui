@@ -89,48 +89,47 @@ export async function POST(request: Request) {
       // Upsert-file the PDFs
       await Promise.all(
         fileSources.map(async (source) => {
-          try {
-            const timeoutPromise = new Promise((_, reject) =>
-              setTimeout(() => reject(new Error('Request timed out')), 60000),
-            );
+          const timeoutPromise = new Promise((_, reject) =>
+            setTimeout(() => reject(new Error('Request timed out')), 60000),
+          );
 
-            const formData = new FormData();
-            formData.append('file', source.file)
-            formData.append('metadata', JSON.stringify({
-              source: 'file',
-              source_id: source.link,
-              url: source.link,
-              created_at: new Date().toISOString(),
-              author: emailAddress,
-            }))
+          const formData = new FormData();
+          formData.append('file', source.file)
+          formData.append('metadata', JSON.stringify({
+            source: 'file',
+            source_id: source.link,
+            url: source.link,
+            created_at: new Date().toISOString(),
+            author: emailAddress,
+          }))
 
-            const res = (await Promise.race([
-              fetch(upsertFileUrl, {
-                method: 'POST',
-                headers: upsertFileHeaders,
-                body: formData
-              }),
-              timeoutPromise,
-            ])) as any;
+          const res = (await Promise.race([
+            fetch(upsertFileUrl, {
+              method: 'POST',
+              headers: upsertFileHeaders,
+              body: formData
+            }),
+            timeoutPromise,
+          ])) as any;
 
-            // if (res) {
-            const resJson = await res.json();
+          // if (res) {
+          if (!res.ok) {
+            // @ts-ignore
+            return res.text().then(text => { throw new Error("Error upserting file: " + source.link + " - " + text) })
+          }
+          const resJson = await res.json();
 
-            if (resJson) {
-              logger.info('Upserted file into db' + source.link + ': ' + JSON.stringify(resJson) +
-                ' for user: ' + emailAddress)
-            }
-          } catch (error) {
-            console.error(error);
-            return null;
+          if (resJson) {
+            logger.info('Upserted file into db ' + source.link + ': ' + JSON.stringify(resJson) +
+              ' for user: ' + emailAddress)
           }
         }),
       )
       logger.info("Done uploading files to vector db")
     }
     return NextResponse.json("ok")
-  } catch (error) {
+  } catch (error: any) {
     console.error('there was an error: ' + error);
-    return NextResponse.json({status: 500, message: JSON.stringify(error)});
+    return NextResponse.json({ error: error.message }, { status: 500 })
   }
 }
