@@ -187,7 +187,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<any>) => {
               pdfs.map(async (source) => {
                 try {
                   const timeoutPromise = new Promise((_, reject) =>
-                    setTimeout(() => reject(new Error('Request timed out')), 60000),
+                    setTimeout(() => reject(new Error('Request timed out')), 300000),
                   );
 
                   const formData = new FormData();
@@ -232,7 +232,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<any>) => {
               filteredSources.map(async (source) => {
                 try {
                   const timeoutPromise = new Promise((_, reject) =>
-                    setTimeout(() => reject(new Error('Request timed out')), 60000),
+                    setTimeout(() => reject(new Error('Request timed out')), 300000),
                   );
 
                   const res = (await Promise.race([
@@ -322,7 +322,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<any>) => {
         It's 70 degrees and sunny in San Francisco today. [[1]](https://www.google.com/search?q=weather+san+francisco)
         `;
       const sourcesString = sources.map((source) => {
-        return endent`${source.sourceId} (${source.url}):
+        return endent`- ${source.sourceId} (${source.url}):
           ${source.text}
           `;
       }).join('\n');
