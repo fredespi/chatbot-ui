@@ -90,7 +90,7 @@ export async function POST(request: Request) {
       await Promise.all(
         fileSources.map(async (source) => {
           const timeoutPromise = new Promise((_, reject) =>
-            setTimeout(() => reject(new Error('Request timed out')), 60000),
+            setTimeout(() => reject(new Error('Request timed out')), 300000),
           );
 
           const formData = new FormData();
