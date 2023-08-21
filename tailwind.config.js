@@ -7,7 +7,11 @@ module.exports = {
   ],
   darkMode: 'class',
   theme: {
-    extend: {},
+    extend: {
+      maxHeight: {
+        custom: 'calc(100vh - 300px)'
+      }
+    },
   },
   variants: {
     extend: {
