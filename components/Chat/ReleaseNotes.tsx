@@ -20,6 +20,8 @@ export const ReleaseNotes: FC<Props> = ({
       </label>
       <span className="text-[12px] text-black/50 dark:text-white/50 text-sm">
         <ul className="list-disc list-inside">
+          <li>2023-08-21: GPU-enabled self hosted open source embeddings model</li>
+          <li>2023-08-14: Self hosted open source embeddings model</li>
           <li>2023-08-11: Clear personal index</li>
           <li>2023-08-10: File uploads</li>
           <li>2023-08-09: Streaming responses</li>
