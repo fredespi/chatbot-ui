@@ -13,12 +13,12 @@ docker build --platform linux/amd64 -t europe-west1-docker.pkg.dev/silogen-dev/s
 
 ### Test the docker image to see that the server starts correctly (without env.local)
 ```bash
-docker run -p 80:80 europe-west1-docker.pkg.dev/silogen-dev/silogen-chat/silo-chat-ui:latest
+docker run -p 80:80 --rm europe-west1-docker.pkg.dev/silogen-dev/silogen-chat/silo-chat-ui:latest
 ```
 
 ### Run the docker image
 ```bash
-docker run -p 80:80 --env-file .env.local europe-west1-docker.pkg.dev/silogen-dev/silogen-chat/silo-chat-ui:latest
+docker run -p 80:80 --env-file .env.local --rm europe-west1-docker.pkg.dev/silogen-dev/silogen-chat/silo-chat-ui:latest
 ```
 
 ### Push the image to gcp
