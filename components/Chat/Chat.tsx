@@ -35,9 +35,11 @@ import {getSettings} from "@/utils/app/settings";
 
 interface Props {
   stopConversationRef: MutableRefObject<boolean>;
+  saveContextUrls: boolean;
+  appTitle: string;
 }
 
-export const Chat = memo(({ stopConversationRef }: Props) => {
+export const Chat = memo(({ stopConversationRef, saveContextUrls, appTitle }: Props) => {
   const { t } = useTranslation('chat');
 
   const {
@@ -413,7 +415,7 @@ export const Chat = memo(({ stopConversationRef }: Props) => {
                             />
                           )}
                         </div>
-                        <p className="text-center text-base">Chat</p>
+                        <p className="text-center text-base">{appTitle}</p>
                       </div>
                     )}
                   </div>
@@ -443,10 +445,11 @@ export const Chat = memo(({ stopConversationRef }: Props) => {
                           })
                         }
                       />
-
-                      <ReleaseNotes
-                        label={t('Release Notes')}
-                      />
+                      {saveContextUrls && (
+                        <ReleaseNotes
+                          label={t('Release Notes')}
+                        />
+                      )}
                     </div>
                   )}
                 </div>
@@ -533,6 +536,7 @@ export const Chat = memo(({ stopConversationRef }: Props) => {
               }
             }}
             showScrollDownButton={showScrollDownButton}
+            saveContextUrls={saveContextUrls}
           />
         </>
       )}

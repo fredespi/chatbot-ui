@@ -68,7 +68,9 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<any>) => {
       // If the SAVE_CONTEXT_URLS env var is set, we'll try to fetch the text of any URLs in the user's message
       // and upsert them into the retrieval plugin vector db.
       let filteredSources: ContextSource[] = [];
+      let authorName = "Silo AI"
       if (SAVE_CONTEXT_URLS) {
+        authorName = emailAddress
         const urlPattern = new RegExp('(?:(?:https?|ftp|file):\/\/|www\.|ftp\.)(?:\([-A-Z0-9+&@#\/%=~_|$?!:,.]*\)|[-A-Z0-9+&@#\/%=~_|$?!:,.])*(?:\([-A-Z0-9+&@#\/%\(\)=~_|$?!:,.]*\)|[A-Z0-9+&@#\/%\(\)=~_|$])', 'gi');
         const urls = userMessage.content.match(urlPattern) || []
 
@@ -168,7 +170,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<any>) => {
                     source_id: source.link,
                     url: source.link,
                     created_at: new Date().toISOString(),
-                    author: emailAddress,
+                    author: authorName,
                   }
                 };
               } else {
@@ -198,7 +200,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<any>) => {
                     source_id: source.link,
                     url: source.link,
                     created_at: new Date().toISOString(),
-                    author: emailAddress,
+                    author: authorName,
                   }))
 
                   const res = (await Promise.race([
@@ -214,7 +216,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<any>) => {
                   const resJson = await res.json();
 
                   if (resJson) {
-                    logger.info('Upserted pdf into db:' + JSON.stringify(resJson) + ' for user: ' + emailAddress)
+                    logger.info('Upserted pdf into db:' + JSON.stringify(resJson) + ' for user: ' + authorName)
                   }
                 } catch (error) {
                   console.error(error);
@@ -249,7 +251,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<any>) => {
                   const resJson = await res.json();
 
                   if (resJson) {
-                    logger.info('Upserted documents into db:' + JSON.stringify(resJson) + ' for user: ' + emailAddress)
+                    logger.info('Upserted documents into db:' + JSON.stringify(resJson) + ' for user: ' + authorName)
                   }
                 } catch (error) {
                   console.error(error);
@@ -271,7 +273,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<any>) => {
               query: query,
               top_k: 4,
               filter: {
-                author: emailAddress,
+                author: authorName,
               }
             }
           ]

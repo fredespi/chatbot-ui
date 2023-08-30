@@ -33,6 +33,7 @@ interface Props {
   stopConversationRef: MutableRefObject<boolean>;
   textareaRef: MutableRefObject<HTMLTextAreaElement | null>;
   showScrollDownButton: boolean;
+  saveContextUrls: boolean;
 }
 
 export const ChatInput = ({
@@ -42,6 +43,7 @@ export const ChatInput = ({
                             stopConversationRef,
                             textareaRef,
                             showScrollDownButton,
+                            saveContextUrls,
                           }: Props) => {
   const {t} = useTranslation('chat');
 
@@ -393,8 +395,8 @@ export const ChatInput = ({
               }`,
             }}
             placeholder={
-              t('Type a message or type "/" to select a prompt; include URLs or upload (multiple) local files to add their text to the ' +
-                'context (your account only)') || ''
+              (saveContextUrls ? t('Type a message or type "/" to select a prompt; include URLs or upload (multiple) local files to add their text to the ' +
+                'context (your account only)') : t('Type a message or type "/" to select a prompt...')) || ''
             }
             value={content}
             rows={2}
@@ -415,20 +417,43 @@ export const ChatInput = ({
               <IconSend size={18}/>
             )}
           </button>
-          <button
-            className="absolute right-2 bottom-1 rounded-sm p-1 text-neutral-800 opacity-60 hover:bg-neutral-200 hover:text-neutral-900 dark:bg-opacity-50 dark:text-neutral-100 dark:hover:text-neutral-200"
-            onClick={handleUploadFile}
-            title="Upload file"
-          >
-            {fileIsUploading ? (
-              <div
-                className="h-4 w-4 animate-spin rounded-full border-t-2 border-neutral-800 opacity-60 dark:border-neutral-100"></div>
-            ) : (
-              <IconFileUpload size={18}/>
-            )}
-          </button>
-          {/* Hidden file input */}
-          <input type="file" multiple ref={fileInput} style={{display: 'none'}} onChange={handleFileChange}/>
+          {
+            saveContextUrls && (
+              <>
+                <button
+                  className="absolute right-2 bottom-1 rounded-sm p-1 text-neutral-800 opacity-60 hover:bg-neutral-200 hover:text-neutral-900 dark:bg-opacity-50 dark:text-neutral-100 dark:hover:text-neutral-200"
+                  onClick={handleUploadFile}
+                  title="Upload file"
+                >
+                  {
+                    fileIsUploading ? (
+                      <div
+                        className="h-4 w-4 animate-spin rounded-full border-t-2 border-neutral-800 opacity-60 dark:border-neutral-100"></div>
+                    ) : (
+                      <IconFileUpload size={18}/>
+                    )
+                  }
+                </button>
+                {/* Hidden file input */}
+                <input type="file" multiple ref={fileInput} style={{display: 'none'}} onChange={handleFileChange}/>
+              </>
+            )
+          }
+
+          {/*<button*/}
+          {/*  className="absolute right-2 bottom-1 rounded-sm p-1 text-neutral-800 opacity-60 hover:bg-neutral-200 hover:text-neutral-900 dark:bg-opacity-50 dark:text-neutral-100 dark:hover:text-neutral-200"*/}
+          {/*  onClick={handleUploadFile}*/}
+          {/*  title="Upload file"*/}
+          {/*>*/}
+          {/*  {fileIsUploading ? (*/}
+          {/*    <div*/}
+          {/*      className="h-4 w-4 animate-spin rounded-full border-t-2 border-neutral-800 opacity-60 dark:border-neutral-100"></div>*/}
+          {/*  ) : (*/}
+          {/*    <IconFileUpload size={18}/>*/}
+          {/*  )}*/}
+          {/*</button>*/}
+          {/*/!* Hidden file input *!/*/}
+          {/*<input type="file" multiple ref={fileInput} style={{display: 'none'}} onChange={handleFileChange}/>*/}
 
           {showScrollDownButton && (
             <div className="absolute bottom-12 right-0 lg:bottom-0 lg:-right-10">

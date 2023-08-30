@@ -45,12 +45,18 @@ interface Props {
   serverSideApiKeyIsSet: boolean;
   serverSidePluginKeysSet: boolean;
   defaultModelId: OpenAIModelID;
+  appTitle: string;
+  appDescription: string;
+  saveContextUrls: boolean;
 }
 
 const Home = ({
   serverSideApiKeyIsSet,
   serverSidePluginKeysSet,
   defaultModelId,
+  appTitle,
+  appDescription,
+  saveContextUrls,
 }: Props) => {
   const { t } = useTranslation('chat');
   const { getModels } = useApiService();
@@ -362,8 +368,8 @@ const Home = ({
       }}
     >
       <Head>
-        <title>Silo AI Chatbot</title>
-        <meta name="description" content="Chat with any file." />
+        <title>{appTitle}</title>
+        <meta name="description" content={appDescription} />
         <meta
           name="viewport"
           content="height=device-height ,width=device-width, initial-scale=1, user-scalable=no"
@@ -382,10 +388,16 @@ const Home = ({
           </div>
 
           <div className="flex h-full w-full pt-[48px] sm:pt-0">
-            <Chatbar />
+            <Chatbar
+              saveContextUrls={saveContextUrls}
+            />
 
             <div className="flex flex-1">
-              <Chat stopConversationRef={stopConversationRef} />
+              <Chat
+                stopConversationRef={stopConversationRef}
+                saveContextUrls={saveContextUrls}
+                appTitle={appTitle}
+              />
             </div>
 
             <Promptbar />
@@ -415,6 +427,7 @@ export const getServerSideProps: GetServerSideProps = async ({ locale }) => {
     serverSidePluginKeysSet = true;
   }
 
+  console.log("saveContextUrls: ", process.env.SAVE_CONTEXT_URLS)
   return {
     props: {
       serverSideApiKeyIsSet: !!process.env.OPENAI_API_KEY,
@@ -428,6 +441,9 @@ export const getServerSideProps: GetServerSideProps = async ({ locale }) => {
         'promptbar',
         'settings',
       ])),
+      appTitle: process.env.APP_TITLE || 'SiloGen Chat',
+      appDescription: process.env.APP_DESCRIPTION || 'A SiloGen app to chat with LLMs.',
+      saveContextUrls: process.env.SAVE_CONTEXT_URLS === 'true',
     },
   };
 };
