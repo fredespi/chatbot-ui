@@ -54,6 +54,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<any>) => {
     // @ts-ignore
     const emailAddress = session.user.email
     logger.info("User: " + emailAddress)
+    logger.info("Using retrieval plugin url: " + process.env.RETRIEVAL_PLUGIN_URL)
     try {
       const {messages, key, model, temperature} =
         (await req.body) as OpenaiRetrievalBody;
