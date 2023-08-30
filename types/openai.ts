@@ -13,6 +13,7 @@ export enum OpenAIModelID {
   GPT_4 = 'gpt-4',
   GPT_4_32K = 'gpt-4-32k',
   LLAMA_2_7B = 'meta-llama/Llama-2-7b-chat-hf',
+  LLAMA_2_13B = 'meta-llama/Llama-2-13b-chat-hf',
 }
 
 // in case the `DEFAULT_MODEL` environment variable is not set or set to an unsupported model
@@ -46,6 +47,12 @@ export const OpenAIModels: Record<OpenAIModelID, OpenAIModel> = {
   [OpenAIModelID.LLAMA_2_7B]: {
     id: OpenAIModelID.LLAMA_2_7B,
     name: 'LLAMA_2_7B',
+    maxLength: 12000,
+    tokenLimit: 4096,
+  },
+  [OpenAIModelID.LLAMA_2_13B]: {
+    id: OpenAIModelID.LLAMA_2_13B,
+    name: 'LLAMA_2_13B',
     maxLength: 12000,
     tokenLimit: 4096,
   }

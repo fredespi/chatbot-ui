@@ -38,7 +38,7 @@ export const OpenAIStream = async (
   messages: Message[],
 ) => {
   let url = "";
-  if (model.id === OpenAIModelID.LLAMA_2_7B) {
+  if (model.id === OpenAIModelID.LLAMA_2_7B || model.id === OpenAIModelID.LLAMA_2_13B) {
     url = `${SECONDARY_OPENAI_API_HOST}/v1/chat/completions`;
   } else {
     url = `${OPENAI_API_HOST}/v1/chat/completions`;
