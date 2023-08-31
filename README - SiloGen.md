@@ -29,22 +29,22 @@ easy-to-use API for submitting or fetching contexts. It wraps whichever vector d
 on macOS, try turning off rosetta in docker desktop).
 If there is an error from mongo db during building it's ok. See the dockerfile for more information.
 ```bash
-docker build --platform linux/amd64 -t europe-west1-docker.pkg.dev/silogen-dev/silogen-dev/silogen-chat-ui:latest . 2>&1 | tee build.log
+docker build --platform linux/amd64 -t europe-west1-docker.pkg.dev/silogen-dev/silogen-chat/silogen-chat-ui:latest . 2>&1 | tee build.log
 ```
 
 ### Test the docker image to see that the server starts correctly (without env.local)
 ```bash
-docker run -p 80:80 --rm europe-west1-docker.pkg.dev/silogen-dev/silogen-dev/silogen-chat-ui:latest
+docker run -p 80:80 --rm europe-west1-docker.pkg.dev/silogen-dev/silogen-chat/silogen-chat-ui:latest
 ```
 
 ### Run the docker image
 ```bash
-docker run -p 80:80 --env-file .env.local --rm europe-west1-docker.pkg.dev/silogen-dev/silogen-dev/silogen-chat-ui:latest
+docker run -p 80:80 --env-file .env.local --rm europe-west1-docker.pkg.dev/silogen-dev/silogen-chat/silogen-chat-ui:latest
 ```
 
 ### Push the image to gcp
 ```bash
-docker push europe-west1-docker.pkg.dev/silogen-dev/silogen-dev/silogen-chat-ui:latest
+docker push europe-west1-docker.pkg.dev/silogen-dev/silogen-chat/silogen-chat-ui:latest
 ```
 
 ## GCP compute engine instructions (we prefer to deploy to kubernetes)
@@ -57,7 +57,7 @@ gcloud compute instance-templates delete silogen-chat-ui
 You have to edit the RETRIEVAL_PLUGIN_URL to match the internal ip of the retrieval plugin.
 ```bash
 source ./.env.local
-gcloud compute instance-templates create-with-container silogen-chat-ui --container-image=europe-west1-docker.pkg.dev/silogen-dev/silogen-dev/silogen-chat-ui:latest --tags=http-server,https-server,allow-port-80 --machine-type e2-standard-2 --container-env OPENAI_API_KEY=${OPENAI_API_KEY},RETRIEVAL_BEARER_KEY=${RETRIEVAL_BEARER_KEY},NEXT_PUBLIC_DEFAULT_TEMPERATURE=${NEXT_PUBLIC_DEFAULT_TEMPERATURE},DEFAULT_MODEL=${DEFAULT_MODEL},RETRIEVAL_PLUGIN_URL=http://10.132.0.8:8080
+gcloud compute instance-templates create-with-container silogen-chat-ui --container-image=europe-west1-docker.pkg.dev/silogen-dev/silogen-chat/silogen-chat-ui:latest --tags=http-server,https-server,allow-port-80 --machine-type e2-standard-2 --container-env OPENAI_API_KEY=${OPENAI_API_KEY},RETRIEVAL_BEARER_KEY=${RETRIEVAL_BEARER_KEY},NEXT_PUBLIC_DEFAULT_TEMPERATURE=${NEXT_PUBLIC_DEFAULT_TEMPERATURE},DEFAULT_MODEL=${DEFAULT_MODEL},RETRIEVAL_PLUGIN_URL=http://10.132.0.8:8080
 ```
 
 ### Create the firewall rule
@@ -78,7 +78,7 @@ gcloud compute instances create silogen-chat-ui --zone europe-west1-b --source-i
 
 ### Delete the image
 ```bash
-gcloud container images delete europe-west1-docker.pkg.dev/silogen-dev/silogen-dev/silogen-chat-ui:latest
+gcloud container images delete europe-west1-docker.pkg.dev/silogen-dev/silogen-chat/silogen-chat-ui:latest
 ```
 
 ## Todo
