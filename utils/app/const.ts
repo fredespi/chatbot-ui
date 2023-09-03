@@ -24,4 +24,4 @@ export const AZURE_DEPLOYMENT_ID =
   process.env.AZURE_DEPLOYMENT_ID || '';
 
 export const SAVE_CONTEXT_URLS =
-  process.env.SAVE_CONTEXT_URLS || '';
+  process.env.SAVE_CONTEXT_URLS === 'true' || false;
