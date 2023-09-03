@@ -24,9 +24,19 @@ easy-to-use API for submitting or fetching contexts. It wraps whichever vector d
 
 ## Docker instructions
 
+### Prepare gcloud
+```bash
+gcloud auth login # login gcloud
+```
+```bash
+gcloud auth configure-docker europe-west1-docker.pkg.dev # configure docker to use gcloud
+```
+```bash
+gcloud config set project silogen-dev # make sure we use the right project
+```
+
 ### Build the docker image 
-(if there is an error like ```assertion failed [result.value != EEXIST]: VmTracker attempted to allocate existing mapping``` 
-on macOS, try turning off rosetta in docker desktop).
+Sometimes there is an error building silopedia-ui: ```30.87 assertion failed [result.value != EEXIST]: VmTracker attempted to allocate existing mapping``` which builds with --platform linux/amd64. We need to turn off the rosetta feature in docker desktop. See https://github.com/docker/roadmap/issues/384
 If there is an error from mongo db during building it's ok. See the dockerfile for more information.
 ```bash
 docker build --platform linux/amd64 -t europe-west1-docker.pkg.dev/silogen-dev/silogen-chat/silogen-chat-ui:latest . 2>&1 | tee build.log
